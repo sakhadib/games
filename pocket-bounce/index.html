@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pocket Bounce</title>
+<meta name="description" content="An endless bouncing-ball runner. Shrink, grow, float, and roll as far as you can.">
+<meta name="theme-color" content="#8ecae6">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='6' fill='%23e63946'/><circle cx='6' cy='6' r='1.6' fill='%23fff' opacity='.7'/></svg>">
+<style>
+  :root { --ink: #1d2236; --paper: #fffaf0; --red: #e63946; --gold: #ffb703; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8ecae6; }
+  body { font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink);
+    touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; display: block; }
+
+  #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 12px 16px; pointer-events: none; z-index: 3; }
+  .stat { background: rgba(255,250,240,.82); border-radius: 14px; padding: 8px 12px; box-shadow: 0 2px 0 rgba(29,34,54,.12); }
+  #dist { font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -.5px; }
+  #dist small { font-size: 14px; font-weight: 700; opacity: .6; }
+  .row { display: flex; gap: 10px; align-items: center; margin-top: 6px; font-weight: 700; font-size: 14px; }
+  .ring-i { width: 12px; height: 12px; border-radius: 50%; border: 3px solid var(--gold); display: inline-block; vertical-align: -1px; }
+  #lives span { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--red); margin-right: 3px; }
+  #lives span.off { background: rgba(29,34,54,.18); }
+  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .btns { display: flex; gap: 8px; pointer-events: auto; }
+  .btn { font: 800 14px inherit; font-family: inherit; color: var(--ink); background: rgba(255,250,240,.82); border: 0; border-radius: 12px;
+    padding: 8px 12px; cursor: pointer; text-decoration: none; box-shadow: 0 2px 0 rgba(29,34,54,.12); line-height: 1; }
+  #best { font-size: 13px; font-weight: 800; }
+  #size { font-size: 12px; font-weight: 800; opacity: .75; }
+
+  #ov { position: fixed; inset: 0; display: none; place-items: center; z-index: 10; padding: 16px; background: rgba(29,34,54,.35); }
+  #ov.show { display: grid; }
+  .card { width: 100%; max-width: 420px; background: var(--paper); border-radius: 24px; padding: 26px 24px; box-shadow: 0 8px 0 rgba(29,34,54,.2), 0 30px 60px rgba(0,0,0,.25); text-align: center; }
+  .card h1 { margin: 0 0 6px; font-size: 34px; letter-spacing: -1px; line-height: 1.05; }
+  .card h1 span { color: var(--red); }
+  .card p { margin: 8px 0; color: #4a4f66; font-size: 15px; line-height: 1.5; }
+  .legend { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; text-align: left; margin: 14px 0; font-size: 14px; color: #4a4f66; }
+  .sw { width: 18px; height: 18px; border-radius: 6px; align-self: center; }
+  .big { font-size: 44px; font-weight: 900; letter-spacing: -1.5px; margin: 4px 0; }
+  .go { display: inline-block; margin-top: 12px; background: var(--red); color: #fff; font-weight: 800; padding: 12px 20px; border-radius: 14px; box-shadow: 0 4px 0 #a4161a; }
+
+  .tbtn { position: fixed; bottom: calc(18px + env(safe-area-inset-bottom)); width: 76px; height: 76px; border-radius: 50%; border: 0;
+    background: rgba(255,250,240,.55); color: var(--ink); font: 900 22px system-ui; display: none; z-index: 4; touch-action: none;
+    box-shadow: 0 3px 0 rgba(29,34,54,.18); }
+  body.touch .tbtn { display: block; }
+  .tbtn.on { background: rgba(255,250,240,.9); transform: translateY(2px); }
+  #tl { left: 16px; } #tr { left: 104px; } #tj { right: 18px; width: 92px; height: 92px; font-size: 16px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="stat">
+    <div id="dist">0<small>m</small></div>
+    <div class="row"><span><i class="ring-i"></i> <b id="rings">0</b></span><span id="lives"></span></div>
+  </div>
+  <div class="right">
+    <div class="btns"><button class="btn" id="snd" title="Sound (M)">♪</button><a class="btn" href="../" title="Back to The Oven">⌂</a></div>
+    <div class="stat" id="best">BEST 0m</div>
+    <div id="size"></div>
+  </div>
+</div>
+<button class="tbtn" id="tl">◀</button><button class="tbtn" id="tr">▶</button><button class="tbtn" id="tj">JUMP</button>
+<div id="ov" class="show"><div class="card" id="card"></div></div>
+
+<script>
+(() => {
+"use strict";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const isTouch = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+if (isTouch) document.body.classList.add("touch");
+const $ = (s) => document.querySelector(s);
+const rand = (n) => (Math.random() * n) | 0;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// ---------- canvas ----------
+const cv = $("#c"), ctx = cv.getContext("2d");
+let DPR = 1, VW = 0, VH = 0, TP = 32;
+function resize() {
+  DPR = Math.min(2, devicePixelRatio || 1); VW = innerWidth; VH = innerHeight;
+  cv.width = VW * DPR; cv.height = VH * DPR; cv.style.width = VW + "px"; cv.style.height = VH + "px";
+  TP = Math.max(18, Math.min(VH / 12.5, VW / (VW < VH ? 10.5 : 15))); // portrait phones zoom in
+}
+addEventListener("resize", resize); resize();
+
+// ---------- audio ----------
+let AC = null, muted = store.get("pb.muted", false);
+function tone(f, dur, type = "sine", vol = 0.1, slide = 0, delay = 0) {
+  if (muted) return;
+  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  if (AC.state === "suspended") AC.resume();
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f * slide), t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+const sfx = {
+  jump(sz) { tone(sz === 0 ? 620 : sz === 2 ? 260 : 420, 0.14, "triangle", 0.09, 1.8); },
+  land(v) { tone(140, 0.08, "sine", Math.min(0.12, v * 0.01), 0.6); },
+  ring() { tone(1318, 0.08, "triangle", 0.08); tone(1760, 0.12, "triangle", 0.07, 0, 0.06); },
+  pop() { tone(500, 0.25, "sawtooth", 0.08, 0.2); tone(90, 0.3, "sine", 0.15, 0.5); },
+  gate(k) { k === 0 ? tone(900, 0.2, "sine", 0.08, 1.6) : k === 2 ? tone(220, 0.25, "sine", 0.12, 0.6) : tone(520, 0.15, "sine", 0.08); },
+  crack() { tone(160, 0.12, "square", 0.06, 0.5); },
+  cp() { [523, 784, 1047].forEach((f, i) => tone(f, 0.12, "triangle", 0.07, 0, i * 0.07)); },
+  splash() { tone(300, 0.2, "sine", 0.05, 0.4); },
+  ok() { tone(880, 0.06, "triangle", 0.06); },
+};
+const sndBtn = $("#snd");
+function syncSnd() { sndBtn.textContent = muted ? "×" : "♪"; sndBtn.style.opacity = muted ? 0.6 : 1; }
+function toggleSnd() { muted = !muted; store.set("pb.muted", muted); syncSnd(); if (!muted) sfx.ok(); }
+syncSnd(); sndBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleSnd(); });
+
+// ---------- world ----------
+// 1 tile = 1 metre. Rows 0..H-1, y grows downward. Columns are generated ahead and dropped behind.
+const H = 12;
+const EMPTY = 0, GROUND = 1, BLOCK = 2, SPIKE = 3, SPIKE_DN = 4, WATER = 5, CRACK = 6;
+const SIZES = [
+  { name: "SMALL", r: 0.35, jump: 12.5, buoy: 8 },
+  { name: "", r: 0.55, jump: 11, buoy: 24 },
+  { name: "BIG", r: 0.85, jump: 9, buoy: 75 },
+];
+const GRAV = 30, MAXV = 6.2, ACCEL = 26;
+let cols, minCol, gx, gTop, lastCP, rings, gates, cps, movers, bits;
+
+const tile = (x, y) => {
+  if (x < minCol) return GROUND;
+  if (y < 0 || y >= H) return EMPTY;
+  const c = cols.get(x); return c ? c[y] : EMPTY;
+};
+const isSolid = (t) => t === GROUND || t === BLOCK || t === CRACK;
+
+function C(top) { const a = new Uint8Array(H); if (top != null) for (let y = top; y < H; y++) a[y] = GROUND; return a; }
+function push(a) { cols.set(gx++, a); }
+function flat(n) { for (let i = 0; i < n; i++) push(C(gTop)); }
+function ringAt(x, y) { rings.push({ x, y, got: false }); }
+function arc(x0, w, base, h = 2) { for (let i = 0; i < w; i++) ringAt(x0 + i + 0.5, base - Math.sin(Math.PI * (i + 0.5) / w) * h); }
+function gate(kind) { gates.push({ x: gx, kind }); }
+const diff = () => clamp((gx - 10) / 1400, 0, 1);
+
+const CHUNKS = [
+  { w: 4, min: 0, fn() { const n = 3 + rand(4); if (Math.random() < 0.5) for (let i = 1; i < n; i++) ringAt(gx + i + 0.5, gTop - 1); flat(n); } },
+  { w: 2, min: 0, fn() { if (gTop > 5) gTop--; flat(2 + rand(2)); } },
+  { w: 2, min: 0, fn() { if (gTop < 10) gTop++; flat(2 + rand(2)); } },
+  { w: 3, min: 0, fn() { flat(1); const w = 2 + (Math.random() < diff() * 0.9 ? 1 : 0); arc(gx, w, gTop - 1.5); for (let i = 0; i < w; i++) push(C(null)); flat(2); } },
+  { w: 3, min: 0.02, fn() {
+      flat(2); const n = Math.min(3, 1 + rand(1 + Math.round(2 * diff())));
+      if (Math.random() < 0.6) arc(gx, n, gTop - 2.2, 1);
+      for (let i = 0; i < n; i++) { const a = C(gTop); a[gTop - 1] = SPIKE; push(a); } flat(2); } },
+  { w: 2, min: 0, fn() { flat(1); const w = 1 + rand(2); for (let i = 0; i < w; i++) push(C(gTop - 1)); ringAt(gx - 0.5, gTop - 2.5); flat(2); } },
+  { w: 2, min: 0.12, fn() { // floating stepping stones
+      flat(1); const k = 2 + rand(2);
+      for (let s = 0; s < k; s++) { push(C(null)); push(C(null)); const y = gTop - rand(2); const a = C(null), b = C(null); a[y] = BLOCK; b[y] = BLOCK; ringAt(gx + 1, y - 1); push(a); push(b); }
+      push(C(null)); push(C(null)); flat(2); } },
+  { w: 2, min: 0.3, fn() { // spiked ceiling over a bump
+      const n = 6; flat(1); const x0 = gx;
+      for (let i = 0; i < n; i++) { const a = C(i === 2 || i === 3 ? gTop - 1 : gTop); a[gTop - 3] = SPIKE_DN; a[gTop - 4] = BLOCK; push(a); }
+      ringAt(x0 + 3, gTop - 2.2); flat(2); } },
+  { w: 2, min: 0.4, fn() { // bobbing spike ball
+      flat(1); const x0 = gx; flat(6); movers.push({ x: x0 + 3, base: gTop - 2.4, amp: 1.6, sp: 1.8 + diff() * 1.5, ph: Math.random() * 6 }); } },
+  { w: 2, min: 0.55, fn() { // spike pit with a single stone
+      flat(1); push(C(null)); push(C(null)); const a = C(null); a[gTop] = BLOCK; ringAt(gx + 0.5, gTop - 1); push(a); push(C(null)); push(C(null)); flat(2); } },
+  // ---- size sections: a gate forces the size, a white gate puts you back ----
+  { w: 2, min: 0.05, fn() { // small: low tunnel
+      flat(1); gate(0); flat(2);
+      const L = 5 + rand(4) + Math.round(5 * diff());
+      for (let i = 0; i < L; i++) { const a = C(gTop); for (let y = 0; y <= gTop - 2; y++) a[y] = BLOCK; if (i % 2) ringAt(gx + 0.5, gTop - 0.5); push(a); }
+      flat(2); gate(1); flat(2); } },
+  { w: 1.5, min: 0.1, fn() { // small: tall wall
+      if (gTop > 8) gTop = 8; flat(1); gate(0); flat(3);
+      push(C(gTop - 2)); ringAt(gx - 0.5, gTop - 3.4); flat(3); gate(1); flat(2); } },
+  { w: 1.5, min: 0.18, fn() { // big: water pool
+      if (gTop > 8) { gTop = 8; } flat(1); gate(2); flat(2);
+      const w = 5 + rand(3) + Math.round(2 * diff());
+      for (let i = 0; i < w; i++) { const a = C(null); for (let y = gTop; y <= H - 3; y++) a[y] = WATER; a[H - 2] = SPIKE; a[H - 1] = GROUND; if (i % 2 === 0) ringAt(gx + 0.5, gTop - 1.2); push(a); }
+      flat(2); gate(1); flat(2); } },
+  { w: 1.2, min: 0.22, fn() { // big: cracked wall
+      flat(1); gate(2); flat(3);
+      const n = 1 + rand(2); for (let i = 0; i < n; i++) { const a = C(gTop); for (let y = 0; y < gTop; y++) a[y] = CRACK; push(a); }
+      flat(2); gate(1); flat(2); } },
+];
+function generate(until) {
+  while (gx < until) {
+    if (gx - lastCP > 70) { flat(2); cps.push({ x: gx + 0.5, top: gTop, on: false }); lastCP = gx; flat(3); continue; }
+    const d = diff(), pool = CHUNKS.filter((c) => c.min <= d);
+    let tot = 0; for (const c of pool) tot += c.w;
+    let r = Math.random() * tot, pick = pool[0];
+    for (const c of pool) { r -= c.w; if (r <= 0) { pick = c; break; } }
+    pick.fn();
+  }
+}
+function newWorld() {
+  cols = new Map(); minCol = 0; gx = 0; gTop = 9; lastCP = 0;
+  rings = []; gates = []; cps = []; movers = []; bits = [];
+  flat(14); cps.push({ x: 3.5, top: gTop, on: true });
+  generate(60);
+}
+
+// ---------- ball ----------
+let ball, size = 1, lives = 3, ringCount = 0, maxX = 3.5, state = "title", stateT = 0, clock = 0, respawn, cam = { x: 0 };
+let best = store.get("pb.best", 0), newBest = false; const pops = [];
+const keys = { l: false, r: false, j: false };
+let jumpBuf = 0, coyote = 0, swimCd = 0;
+
+function placeBall(x, top) { ball = { x, y: top - SIZES[1].r - 0.02, vx: 0, vy: 0, rot: 0, sq: 0, grounded: false }; size = 1; }
+function newGame() {
+  newWorld(); placeBall(3.5, 9); respawn = { x: 3.5, top: 9 };
+  lives = 3; ringCount = 0; maxX = ball.x; newBest = false; cam.x = ball.x - viewW() * 0.35;
+  setState("play"); hideCard(); updateHud();
+}
+function setState(s) { state = s; stateT = 0; }
+function setSize(k) {
+  if (k === size) return;
+  const old = SIZES[size].r; size = k; ball.y -= SIZES[k].r - old; sfx.gate(k);
+  burst(ball.x, ball.y, k === 0 ? "#4cc9f0" : k === 2 ? "#fb8500" : "#ffffff", 14);
+}
+function pop() {
+  if (state !== "play") return;
+  pops.push({ x: +ball.x.toFixed(1), y: +ball.y.toFixed(1), size }); sfx.pop(); burst(ball.x, ball.y, "#e63946", 26); lives--; updateHud();
+  setState(lives > 0 ? "popped" : "dead");
+  if (lives <= 0) finish();
+}
+function finish() {
+  const m = Math.floor(maxX - 3.5);
+  if (m > best) { best = m; newBest = true; store.set("pb.best", best); }
+  setTimeout(showOver, 900);
+}
+
+function burst(x, y, color, n) {
+  for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, s = 2 + Math.random() * 5; bits.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 2, life: 0.5 + Math.random() * 0.4, color }); }
+}
+
+function physics(dt) {
+  const S = SIZES[size], r = S.r;
+  // input
+  const dir = (keys.r ? 1 : 0) - (keys.l ? 1 : 0);
+  const accel = ball.grounded ? ACCEL : ACCEL * 0.6;
+  if (dir) ball.vx = clamp(ball.vx + dir * accel * dt, -MAXV, MAXV);
+  else { const f = (ball.grounded ? 14 : 2) * dt; ball.vx = Math.abs(ball.vx) <= f ? 0 : ball.vx - Math.sign(ball.vx) * f; }
+
+  // water
+  const wx = Math.floor(ball.x);
+  let sub = 0;
+  if (tile(wx, Math.floor(ball.y + r * 0.9)) === WATER || tile(wx, Math.floor(ball.y)) === WATER) {
+    let s = Math.floor(ball.y + r); while (s > 0 && tile(wx, s - 1) === WATER) s--;
+    sub = clamp((ball.y + r - s) / (2 * r), 0, 1);
+  }
+  if (sub > 0 && !ball.wet) { ball.wet = true; sfx.splash(); } else if (sub === 0) ball.wet = false;
+  ball.vy += (GRAV - S.buoy * sub) * dt;
+  if (sub > 0) { const k = 1 - Math.min(1, 2.2 * dt * sub); ball.vx *= 1 - Math.min(1, 0.8 * dt * sub); ball.vy *= k; }
+
+  // jump (buffered, with coyote time); paddle up when floating
+  jumpBuf -= dt; coyote = ball.grounded ? 0.09 : coyote - dt; swimCd -= dt;
+  if (jumpBuf > 0 && coyote > 0) { ball.vy = -S.jump; jumpBuf = 0; coyote = 0; ball.sq = -0.25; sfx.jump(size); }
+  else if (jumpBuf > 0 && sub > 0.25 && swimCd <= 0 && size !== 0) { ball.vy = size === 2 ? -9 : -6.5; swimCd = 0.35; jumpBuf = 0; sfx.jump(size); }
+  if (!keys.j && ball.vy < -3 && !ball.cut) { ball.vy *= 0.55; ball.cut = true; } // short hop on early release
+  if (ball.grounded) ball.cut = false;
+
+  // integrate in substeps with circle-vs-tile collision
+  const steps = 4; let landed = 0;
+  ball.grounded = false;
+  for (let s = 0; s < steps; s++) {
+    ball.x += ball.vx * dt / steps; ball.y += ball.vy * dt / steps;
+    const x0 = Math.floor(ball.x - r), x1 = Math.floor(ball.x + r), y0 = Math.floor(ball.y - r), y1 = Math.floor(ball.y + r);
+    for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+      const t = tile(tx, ty);
+      if (t === SPIKE || t === SPIKE_DN) {
+        const hy = t === SPIKE ? ty + 0.35 : ty, hh = 0.65;
+        const cx = clamp(ball.x, tx + 0.18, tx + 0.82), cy = clamp(ball.y, hy, hy + hh);
+        if ((ball.x - cx) ** 2 + (ball.y - cy) ** 2 < (r * 0.85) ** 2) return pop();
+        continue;
+      }
+      if (!isSolid(t)) continue;
+      const px = clamp(ball.x, tx, tx + 1), py = clamp(ball.y, ty, ty + 1);
+      let dx = ball.x - px, dy = ball.y - py, d2 = dx * dx + dy * dy;
+      if (d2 >= r * r) continue;
+      if (t === CRACK && size === 2) { cols.get(tx)[ty] = EMPTY; burst(tx + 0.5, ty + 0.5, "#c9a227", 6); sfx.crack(); continue; }
+      let d = Math.sqrt(d2), nx, ny;
+      if (d < 1e-4) { nx = 0; ny = -1; d = 0; } else { nx = dx / d; ny = dy / d; }
+      const pen = r - d; ball.x += nx * pen; ball.y += ny * pen;
+      const vn = ball.vx * nx + ball.vy * ny;
+      if (vn < 0) {
+        const bounce = ny < -0.6 && vn < -7 ? 0.32 : 0;
+        if (ny < -0.6) landed = Math.max(landed, -vn);
+        ball.vx -= (1 + bounce) * vn * nx; ball.vy -= (1 + bounce) * vn * ny;
+      }
+      if (ny < -0.6) ball.grounded = true;
+    }
+  }
+  if (landed > 4) { ball.sq = Math.min(0.35, landed * 0.025); sfx.land(landed); }
+  ball.rot += ball.vx * dt / r;
+  ball.sq *= Math.pow(0.0005, dt);
+  if (ball.y > H + 3) return pop();
+
+  // objects
+  for (const g of gates) if (Math.floor(ball.x) === g.x) setSize(g.kind);
+  for (const c of cps) if (!c.on && Math.abs(ball.x - c.x) < 0.6) { c.on = true; respawn = { x: c.x, top: c.top }; sfx.cp(); burst(c.x, c.top - 2, "#80ed99", 16); }
+  for (const g of rings) if (!g.got && Math.hypot(g.x - ball.x, g.y - ball.y) < r + 0.3) { g.got = true; ringCount++; sfx.ring(); burst(g.x, g.y, "#ffb703", 8); updateHud(); }
+  for (const m of movers) { const my = m.base + Math.sin(clock * m.sp + m.ph) * m.amp; if (Math.hypot(m.x - ball.x, my - ball.y) < r + 0.32) return pop(); }
+}
+
+const viewW = () => VW / TP;
+function update(dt) {
+  clock += dt; stateT += dt;
+  for (const b of bits) { b.life -= dt; b.vy += 18 * dt; b.x += b.vx * dt; b.y += b.vy * dt; }
+  bits = bits.filter((b) => b.life > 0);
+  if (!ball) return;
+  if (state === "play") {
+    physics(dt);
+    if (ball.x > maxX) { maxX = ball.x; updateHud(); }
+  } else if (state === "popped" && stateT > 1) {
+    placeBall(respawn.x, respawn.top); setState("play");
+  }
+  // camera, generation, cleanup
+  const tx = ball.x - viewW() * 0.35;
+  cam.x += (tx - cam.x) * Math.min(1, dt * 6);
+  generate(Math.ceil(cam.x + viewW() + 12));
+  const cut = Math.floor(Math.min(cam.x - 20, respawn ? respawn.x - 6 : 0));  // keep the respawn point alive
+  while (minCol < cut) { cols.delete(minCol); minCol++; }
+  if (rings.length > 400) rings = rings.filter((g) => g.x > cut);
+  gates = gates.filter((g) => g.x > cut); movers = movers.filter((m) => m.x > cut);
+  cps = cps.filter((c) => c.x > cut || c === cps[cps.length - 1]);
+}
+
+// ---------- HUD & overlays ----------
+const ui = { dist: $("#dist"), rings: $("#rings"), lives: $("#lives"), best: $("#best"), size: $("#size"), ov: $("#ov"), card: $("#card") };
+function meters() { return Math.max(0, Math.floor(maxX - 3.5)); }
+function updateHud() {
+  ui.dist.innerHTML = meters() + "<small>m</small>";
+  ui.rings.textContent = ringCount;
+  ui.lives.innerHTML = [0, 1, 2].map((i) => `<span class="${i < lives ? "" : "off"}"></span>`).join("");
+  ui.best.textContent = "BEST " + best + "m";
+}
+function showCard(html) { ui.card.innerHTML = html; ui.ov.classList.add("show"); }
+function hideCard() { ui.ov.classList.remove("show"); }
+const PROMPT = isTouch ? "Tap to roll" : "Press Space to roll";
+function showTitle() {
+  setState("title");
+  showCard(`<h1>POCKET <span>BOUNCE</span></h1>
+    <p>Roll as far as you can. The road builds itself as you go.</p>
+    <div class="legend">
+      <div class="sw" style="background:#4cc9f0"></div><div>Blue gate: shrink. Jump higher, squeeze through tunnels.</div>
+      <div class="sw" style="background:#fb8500"></div><div>Orange gate: grow. Float on water, smash cracked walls.</div>
+      <div class="sw" style="background:#e9ecef;border:2px solid #1d2236"></div><div>Spikes pop you. Flags save your spot.</div>
+      <div class="sw" style="border:4px solid #ffb703;border-radius:50%"></div><div>Rings are +10 each.</div>
+    </div>
+    <p>${isTouch ? "◀ ▶ to roll, JUMP to bounce." : "← → or A D to roll, Space / W / ↑ to jump."}</p>
+    <span class="go">${PROMPT}</span>`);
+}
+function showOver() {
+  setState("over");
+  const m = meters(), sc = m + ringCount * 10;
+  showCard(`<h1>POP<span>!</span></h1>
+    <p>You rolled</p><div class="big">${m}m</div>
+    <p>${ringCount} rings · score ${sc}</p>
+    <p>${newBest ? "<b>New best distance!</b>" : "Best: " + best + "m"}</p>
+    <span class="go">${isTouch ? "Tap to roll again" : "Space to roll again"}</span>`);
+}
+
+// ---------- render ----------
+const SKIES = [
+  ["#8ecae6", "#e0f4ff", "#a8dadc", "#74c69d"],  // day
+  ["#ffb4a2", "#ffe5d9", "#e5989b", "#b5838d"],  // late afternoon
+  ["#6d597a", "#eaac8b", "#b56576", "#355070"],  // dusk
+  ["#14213d", "#3a5a8c", "#2b4570", "#1b2a49"],  // night
+  ["#9d8df1", "#ffd6a5", "#b8b8ff", "#7b9acc"],  // dawn
+];
+function hex(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mix(a, b, t) { const A = hex(a), B = hex(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], t))).join(",")})`; }
+function palette(m) {
+  const span = 350, p = m / span, i = Math.floor(p) % SKIES.length, j = (i + 1) % SKIES.length;
+  let t = p - Math.floor(p); t = t < 0.75 ? 0 : (t - 0.75) / 0.25; // hold each sky, then blend
+  return SKIES[i].map((c, k) => mix(c, SKIES[j][k], t));
+}
+
+function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const pal = palette(maxX || 0);
+  const ctrl = isTouch ? 120 : 0;
+  const worldBottom = VH - ctrl;              // row H sits here
+  const oy = worldBottom - H * TP;            // screen y of row 0
+  const camX = cam.x;
+
+  // sky
+  const sky = ctx.createLinearGradient(0, 0, 0, VH);
+  sky.addColorStop(0, pal[0]); sky.addColorStop(1, pal[1]);
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, VW, VH);
+  // hills (two parallax layers)
+  hills(camX * TP * 0.15, oy + TP * 5, TP * 2.6, pal[2], 0.004);
+  hills(camX * TP * 0.35, oy + TP * 7, TP * 2.2, pal[3], 0.007);
+
+  if (!cols) return;
+  const x0 = Math.floor(camX) - 1, x1 = Math.ceil(camX + viewW()) + 1;
+  const sx = (x) => (x - camX) * TP, sy = (y) => oy + y * TP;
+
+  // best-distance marker
+  if (best > 0) {
+    const bx = sx(best + 3.5);
+    if (bx > -10 && bx < VW + 10) {
+      ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.setLineDash([6, 6]); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(bx, 0); ctx.lineTo(bx, worldBottom); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.font = `800 ${Math.round(TP * 0.4)}px system-ui`; ctx.fillText("BEST", bx + 6, oy + TP * 1.2);
+    }
+  }
+
+  // water (behind tiles)
+  for (let x = x0; x <= x1; x++) for (let y = 0; y < H; y++) if (tile(x, y) === WATER) {
+    ctx.fillStyle = "rgba(76,201,240,.55)"; ctx.fillRect(sx(x), sy(y), TP + 1, TP + 1);
+    if (tile(x, y - 1) !== WATER) { ctx.fillStyle = "rgba(255,255,255,.6)"; ctx.fillRect(sx(x), sy(y) + Math.sin(clock * 3 + x) * 2, TP + 1, 3); }
+  }
+
+  // tiles
+  for (let x = x0; x <= x1; x++) for (let y = 0; y < H; y++) {
+    const t = tile(x, y); if (!t || t === WATER) continue;
+    const X = sx(x), Y = sy(y);
+    if (t === GROUND) {
+      ctx.fillStyle = "#3d405b"; ctx.fillRect(X, Y, TP + 1, TP + 1);
+      if (!isSolid(tile(x, y - 1))) { ctx.fillStyle = "#81b29a"; ctx.fillRect(X, Y, TP + 1, TP * 0.28); ctx.fillStyle = "#a7d7b8"; ctx.fillRect(X, Y, TP + 1, TP * 0.08); }
+      else if ((x * 7 + y * 3) % 5 === 0) { ctx.fillStyle = "rgba(255,255,255,.05)"; ctx.fillRect(X + TP * 0.3, Y + TP * 0.4, TP * 0.2, TP * 0.2); }
+    } else if (t === BLOCK) {
+      ctx.fillStyle = "#f2cc8f"; roundRect(X + 1, Y + 1, TP - 2, TP - 2, TP * 0.18); ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,.12)"; ctx.fillRect(X + 2, Y + TP * 0.72, TP - 4, TP * 0.22);
+    } else if (t === CRACK) {
+      ctx.fillStyle = "#c9a227"; roundRect(X + 1, Y + 1, TP - 2, TP - 2, TP * 0.12); ctx.fill();
+      ctx.strokeStyle = "rgba(29,34,54,.45)"; ctx.lineWidth = 2; ctx.beginPath();
+      ctx.moveTo(X + TP * 0.2, Y + TP * 0.15); ctx.lineTo(X + TP * 0.5, Y + TP * 0.5); ctx.lineTo(X + TP * 0.35, Y + TP * 0.85);
+      ctx.moveTo(X + TP * 0.5, Y + TP * 0.5); ctx.lineTo(X + TP * 0.85, Y + TP * 0.4); ctx.stroke();
+    } else if (t === SPIKE || t === SPIKE_DN) {
+      const up = t === SPIKE; ctx.fillStyle = "#e9ecef"; ctx.strokeStyle = "#1d2236"; ctx.lineWidth = 2;
+      for (let k = 0; k < 2; k++) {
+        const bx = X + k * TP / 2;
+        ctx.beginPath();
+        if (up) { ctx.moveTo(bx + 2, Y + TP); ctx.lineTo(bx + TP / 4, Y + TP * 0.3); ctx.lineTo(bx + TP / 2 - 2, Y + TP); }
+        else { ctx.moveTo(bx + 2, Y); ctx.lineTo(bx + TP / 4, Y + TP * 0.7); ctx.lineTo(bx + TP / 2 - 2, Y); }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      }
+    }
+  }
+
+  // gates
+  for (const g of gates) {
+    const X = sx(g.x); if (X < -TP || X > VW + TP) continue;
+    const col = g.kind === 0 ? "76,201,240" : g.kind === 2 ? "251,133,0" : "255,255,255";
+    const grad = ctx.createLinearGradient(X, 0, X + TP, 0);
+    grad.addColorStop(0, `rgba(${col},0)`); grad.addColorStop(0.5, `rgba(${col},${0.35 + 0.15 * Math.sin(clock * 4)})`); grad.addColorStop(1, `rgba(${col},0)`);
+    ctx.fillStyle = grad; ctx.fillRect(X, 0, TP, worldBottom);
+    ctx.fillStyle = `rgba(${col},.95)`; ctx.font = `900 ${Math.round(TP * 0.7)}px system-ui`; ctx.textAlign = "center";
+    for (let k = 0; k < 3; k++) ctx.fillText(g.kind === 0 ? "−" : g.kind === 2 ? "+" : "○", X + TP / 2, oy + TP * (2 + k * 3) + Math.sin(clock * 3 + k) * 4);
+    ctx.textAlign = "start";
+  }
+  // checkpoints
+  for (const c of cps) {
+    const X = sx(c.x), Y = sy(c.top); if (X < -TP || X > VW + TP) continue;
+    ctx.fillStyle = "#1d2236"; ctx.fillRect(X - 2, Y - TP * 2.2, 4, TP * 2.2);
+    ctx.fillStyle = c.on ? "#80ed99" : "#adb5bd";
+    const w = Math.sin(clock * 5) * TP * 0.08;
+    ctx.beginPath(); ctx.moveTo(X + 2, Y - TP * 2.2); ctx.lineTo(X + TP * 0.9, Y - TP * 1.95 + w); ctx.lineTo(X + 2, Y - TP * 1.6); ctx.fill();
+  }
+  // rings
+  for (const g of rings) {
+    if (g.got) continue; const X = sx(g.x), Y = sy(g.y); if (X < -TP || X > VW + TP) continue;
+    const s = Math.abs(Math.cos(clock * 2.5 + g.x * 0.7));
+    ctx.strokeStyle = "#ffb703"; ctx.lineWidth = Math.max(3, TP * 0.11);
+    ctx.beginPath(); ctx.ellipse(X, Y, Math.max(2, TP * 0.28 * s), TP * 0.3, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  // movers
+  for (const m of movers) {
+    const X = sx(m.x), Y = sy(m.base + Math.sin(clock * m.sp + m.ph) * m.amp); if (X < -TP || X > VW + TP) continue;
+    ctx.fillStyle = "#1d2236"; ctx.beginPath();
+    for (let i = 0; i < 16; i++) { const a = (i / 16) * Math.PI * 2 + clock, rr = TP * (i % 2 ? 0.25 : 0.42); ctx.lineTo(X + Math.cos(a) * rr, Y + Math.sin(a) * rr); }
+    ctx.closePath(); ctx.fill();
+  }
+
+  // ball
+  if (ball && state !== "popped" && state !== "dead" && state !== "over") {
+    const r = SIZES[size].r * TP, X = sx(ball.x), Y = sy(ball.y);
+    const sq = clamp(ball.sq, -0.3, 0.35);
+    ctx.save(); ctx.translate(X, Y + r * sq * 0.5); ctx.scale(1 + sq, 1 - sq);
+    ctx.fillStyle = "rgba(0,0,0,.12)"; ctx.beginPath(); ctx.arc(r * 0.08, r * 0.1, r, 0, Math.PI * 2); ctx.fill();
+    const grd = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
+    grd.addColorStop(0, "#ff6b6b"); grd.addColorStop(1, "#c1121f");
+    ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill();
+    ctx.rotate(ball.rot);
+    ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = Math.max(2, r * 0.14);
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.62, -0.6, 0.6); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.beginPath(); ctx.arc(X - r * 0.35, Y - r * 0.38 + r * sq * 0.5, r * 0.18, 0, Math.PI * 2); ctx.fill();
+  }
+  // particles
+  for (const b of bits) { ctx.globalAlpha = clamp(b.life * 2, 0, 1); ctx.fillStyle = b.color; ctx.fillRect(sx(b.x) - 3, sy(b.y) - 3, 6, 6); }
+  ctx.globalAlpha = 1;
+  // ground beneath world for touch control area
+  if (ctrl) { ctx.fillStyle = "#151827"; ctx.fillRect(0, worldBottom, VW, ctrl); ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.fillRect(0, worldBottom, VW, 2); }
+}
+function hills(off, baseY, amp, color, freq) {
+  ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(0, VH);
+  for (let x = 0; x <= VW + 8; x += 8) { const w = x + off; ctx.lineTo(x, baseY - (Math.sin(w * freq) * 0.6 + Math.sin(w * freq * 2.3 + 1) * 0.4 + 1) * amp * 0.5); }
+  ctx.lineTo(VW, VH); ctx.closePath(); ctx.fill();
+}
+function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+  update(dt); render();
+  ui.size.textContent = ball && size !== 1 && state === "play" ? SIZES[size].name + " BALL" : "";
+  requestAnimationFrame(frame);
+}
+newWorld(); placeBall(3.5, 9); cam.x = 0; updateHud(); showTitle();
+requestAnimationFrame(frame);
+
+// ---------- input ----------
+function startOrResume() {
+  if (state === "title" || (state === "over" && stateT > 0.6)) { sfx.ok(); newGame(); return true; }
+  if (state === "paused") { setState("play"); hideCard(); return true; }
+  return false;
+}
+function pause() {
+  if (state === "play") { setState("paused"); showCard(`<h1>PAUSED</h1><span class="go">${isTouch ? "Tap to continue" : "Space to continue"}</span>`); }
+}
+function jumpDown() { if (startOrResume()) return; keys.j = true; jumpBuf = 0.12; }
+const K = { ArrowLeft: "l", KeyA: "l", ArrowRight: "r", KeyD: "r", Space: "j", ArrowUp: "j", KeyW: "j", KeyZ: "j" };
+addEventListener("keydown", (e) => {
+  const k = K[e.code];
+  if (k || e.code === "KeyP" || e.code === "Escape" || e.code === "Enter") e.preventDefault();
+  if (e.code === "KeyM") return toggleSnd();
+  if (e.code === "KeyP" || e.code === "Escape") return state === "paused" ? startOrResume() : pause();
+  if (e.code === "Enter") return startOrResume();
+  if (!k || e.repeat) return;
+  if (k === "j") jumpDown(); else keys[k] = true;
+});
+addEventListener("keyup", (e) => { const k = K[e.code]; if (k) keys[k] = false; });
+addEventListener("blur", () => { keys.l = keys.r = keys.j = false; });
+ui.ov.addEventListener("pointerdown", (e) => { e.preventDefault(); startOrResume(); });
+for (const [id, k] of [["tl", "l"], ["tr", "r"], ["tj", "j"]]) {
+  const b = document.getElementById(id);
+  b.addEventListener("pointerdown", (e) => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (_) {} b.classList.add("on"); if (k === "j") jumpDown(); else keys[k] = true; });
+  const up = () => { b.classList.remove("on"); keys[k] = false; };
+  b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up);
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) { keys.l = keys.r = keys.j = false; pause(); } });
+
+if (location.search.includes("debug")) window.__pb = {
+  get: () => ({ state, x: +ball.x.toFixed(2), y: +ball.y.toFixed(2), size, lives, rings: ringCount, m: meters(), grounded: ball.grounded, gx }),
+  build: (i) => { const s0 = Math.floor(ball.x) + 3; for (const k of [...cols.keys()]) if (k >= s0) cols.delete(k);
+    gx = s0; gTop = Math.round(ball.y + SIZES[size].r); const st = gx; CHUNKS[i].fn(); return st; },
+  pops, keys, jump: () => { jumpBuf = 0.12; }, tile, gates: () => gates, teleport: (x, top) => { placeBall(x, top); }, setSize, world: () => ({ cols, minCol }),
+};
+})();
+</script>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

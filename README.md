@@ -13,6 +13,7 @@ Every game is a single self-contained HTML file. No installs, no build step, no 
 | [The Shifting Dark](https://sakhadib.github.io/games/shifting-dark/) | 2D maze | Your torch shows almost nothing, and the maze rewrites itself wherever it isn't lit. Find the door before it moves. |
 | [Pocket Snake](https://sakhadib.github.io/games/pocket-snake/) | 2D arcade | Classic snake on a little black-and-white phone screen. Eat dots, chase the runaway mouse, and don't bite yourself. |
 | [Pocket Strike](https://sakhadib.github.io/games/pocket-strike/) | 2D shooter | A side-scrolling space shooter on a monochrome LCD. Saucers, asteroids, power-ups, and a boss at the end of every stage. |
+| [Pocket Bounce](https://sakhadib.github.io/games/pocket-bounce/) | 2D platformer | An endless bouncing-ball runner. The road builds itself as you go; shrink to squeeze through tunnels, grow to float and smash walls. |
 
 ## How it works
 
