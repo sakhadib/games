@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pocket Strike</title>
+<meta name="description" content="A side-scrolling space shooter on a monochrome LCD. Saucers, asteroids, bosses.">
+<meta name="theme-color" content="#b7c59a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23b7c59a'/><path d='M2 5h3v2h5v2H5v2H2z M12 7h3v2h-3z' fill='%231f2a17'/></svg>">
+<style>
+  :root { --lcd: #b7c59a; --ink: #1f2a17; --ink-soft: rgba(31,42,23,.45); --s: 8px; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(ellipse at 50% 40%, #bccaa0 40%, #a3b287);
+    color: var(--ink); font-family: ui-monospace, Menlo, Consolas, monospace;
+    overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
+    display: flex; flex-direction: column; height: 100dvh;
+  }
+  .bar { height: 44px; flex: none; display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 0 16px; }
+  .bar a, .bar button {
+    font: 700 13px ui-monospace, monospace; color: var(--ink); background: transparent;
+    border: 2px solid var(--ink); padding: 5px 9px; cursor: pointer; text-decoration: none; line-height: 1;
+  }
+  .bar a:hover, .bar button:hover { background: var(--ink); color: var(--lcd); }
+  #stage { flex: 1; min-height: 0; display: grid; place-items: center; }
+  .lcd { position: relative; }
+  .lcd canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .lcd::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(rgba(183,197,154,.4) 1px, transparent 1px) 0 0 / var(--s) var(--s),
+      linear-gradient(90deg, rgba(183,197,154,.4) 1px, transparent 1px) 0 0 / var(--s) var(--s);
+  }
+  #pad { flex: none; display: none; height: 38dvh; padding: 0 20px env(safe-area-inset-bottom);
+    grid-template-columns: 1fr auto; align-items: center; gap: 16px; }
+  body.touch #pad { display: grid; }
+  #stick { position: relative; width: min(44vw, 24dvh); aspect-ratio: 1; border-radius: 50%; justify-self: start;
+    border: 3px solid var(--ink); background: rgba(31,42,23,.06); touch-action: none; }
+  #knob { position: absolute; left: 50%; top: 50%; width: 40%; aspect-ratio: 1; border-radius: 50%;
+    background: var(--ink); transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(183,197,154,.6); pointer-events: none; }
+  .btns { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .pbtn { border-radius: 50%; border: 3px solid var(--ink); background: rgba(31,42,23,.06); color: var(--ink);
+    font: 700 14px ui-monospace, monospace; letter-spacing: 1px; touch-action: none; }
+  #fire { width: min(30vw, 17dvh); aspect-ratio: 1; font-size: 16px; }
+  #bomb { width: min(18vw, 10dvh); aspect-ratio: 1; font-size: 11px; }
+  .pbtn.on { background: var(--ink); color: var(--lcd); }
+  .help { flex: none; text-align: center; font-size: 12px; color: var(--ink-soft); padding: 0 16px 12px; }
+  body.touch .help { display: none; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <button id="snd" title="Sound (M)">♪</button>
+  <a href="../" title="Back to The Oven">⌂</a>
+</div>
+<div id="stage"><div class="lcd" id="lcdbox"><canvas id="lcd"></canvas></div></div>
+<div id="pad">
+  <div id="stick"><div id="knob"></div></div>
+  <div class="btns"><button class="pbtn" id="fire">FIRE</button><button class="pbtn" id="bomb">BOMB</button></div>
+</div>
+<div class="help">arrows / WASD to fly · hold SPACE (or Z) to fire · X for bomb · P to pause · M for sound</div>
+
+<script>
+(() => {
+"use strict";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const isTouch = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+if (isTouch) document.body.classList.add("touch");
+const rand = (n) => (Math.random() * n) | 0;
+
+// ---------- LCD ----------
+let SW = 120, SH = 64, SCALE = 8, locked = false;
+const cv = document.getElementById("lcd"), g = cv.getContext("2d"), box = document.getElementById("lcdbox");
+const stage$ = document.getElementById("stage");
+let img, target, level, flash = 0;
+const BG = [183, 197, 154], INK = [31, 42, 23];
+function allocLCD(w, h) {
+  SW = w; SH = h; cv.width = w; cv.height = h;
+  img = g.createImageData(w, h); target = new Uint8Array(w * h); level = new Float32Array(w * h);
+}
+function px(x, y) { x |= 0; y |= 0; if (x >= 0 && y >= 0 && x < SW && y < SH) target[y * SW + x] = 1; }
+function clr(x, y) { x |= 0; y |= 0; if (x >= 0 && y >= 0 && x < SW && y < SH) target[y * SW + x] = 0; }
+function rect(x, y, w, h) { x = Math.round(x); y = Math.round(y); for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px(x + i, y + j); }
+function present(dt) {
+  if (flash > 0) for (let i = 0; i < target.length; i++) target[i] ^= 1; // bomb flash: invert the screen
+  const on = Math.min(1, dt * 40), off = Math.min(1, dt * 20);
+  const d = img.data;
+  for (let i = 0; i < target.length; i++) {
+    let v = level[i];
+    v += target[i] ? (1 - v) * on : -v * off;
+    level[i] = v;
+    const o = i * 4;
+    d[o] = BG[0] + (INK[0] - BG[0]) * v; d[o + 1] = BG[1] + (INK[1] - BG[1]) * v; d[o + 2] = BG[2] + (INK[2] - BG[2]) * v; d[o + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  target.fill(0);
+}
+function layout() {
+  const aw = stage$.clientWidth - 24, ah = stage$.clientHeight - 16;
+  if (!locked) {
+    const s = Math.max(1, Math.floor(Math.min(ah / 64, aw / 96)));
+    const w = Math.min(150, Math.max(96, Math.floor(aw / s)));
+    const h = isTouch ? Math.min(104, Math.max(64, Math.floor(ah / s))) : 64; // portrait phones get a taller field
+    if (w !== SW || h !== SH || !img) allocLCD(w, h);
+  }
+  SCALE = Math.max(1, Math.floor(Math.min(aw / SW, ah / SH)));
+  box.style.width = SW * SCALE + "px"; box.style.height = SH * SCALE + "px";
+  document.documentElement.style.setProperty("--s", SCALE + "px");
+}
+addEventListener("resize", layout);
+
+// ---------- 3x5 font ----------
+const F = {
+  "0":"111101101101111","1":"010110010010111","2":"111001111100111","3":"111001111001111","4":"101101111001001",
+  "5":"111100111001111","6":"111100111101111","7":"111001001001001","8":"111101111101111","9":"111101111001111",
+  A:"010101111101101",B:"110101110101110",C:"011100100100011",D:"110101101101110",E:"111100110100111",
+  F:"111100110100100",G:"011100101101011",H:"101101111101101",I:"111010010010111",J:"001001001101010",
+  K:"101101110101101",L:"100100100100111",O:"010101101101010",P:"110101110100100",Q:"010101101110011",
+  R:"110101110101101",S:"011100010001110",T:"111010010010010",U:"101101101101111",V:"101101101101010",
+  X:"101101010101101",Y:"101101010010010",Z:"111001010100111"," ":"000000000000000",
+  "-":"000000111000000","!":"010010010000010",".":"000000000000010","+":"000010111010000",
+  M:["10001","11011","10101","10001","10001"], N:["1001","1101","1011","1001","1001"], W:["10001","10001","10101","11011","10001"],
+};
+function glyph(c) {
+  const f = F[c] || F[" "];
+  return Array.isArray(f) ? f : [f.slice(0, 3), f.slice(3, 6), f.slice(6, 9), f.slice(9, 12), f.slice(12, 15)];
+}
+function textW(s, sc = 1) { let w = 0; for (const c of s) w += (glyph(c)[0].length + 1) * sc; return w - sc; }
+function text(s, x, y, sc = 1) {
+  if (x === "c") x = Math.round((SW - textW(s, sc)) / 2);
+  if (x === "r") x = SW - 1 - textW(s, sc);
+  for (const c of s) {
+    const gl = glyph(c);
+    for (let r = 0; r < 5; r++) for (let i = 0; i < gl[r].length; i++) if (gl[r][i] === "1") rect(x + i * sc, y + r * sc, sc, sc);
+    x += (gl[0].length + 1) * sc;
+  }
+}
+const pad = (n, w = 5) => String(n).padStart(w, "0");
+
+// ---------- audio ----------
+let AC = null, muted = store.get("pst.muted", false);
+function ac() {
+  if (muted) return null;
+  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+  if (AC.state === "suspended") AC.resume();
+  return AC;
+}
+function beep(f, dur, delay = 0, vol = 0.05, slide = 0) {
+  const a = ac(); if (!a) return;
+  const t = a.currentTime + delay, o = a.createOscillator(), gn = a.createGain();
+  o.type = "square"; o.frequency.setValueAtTime(f, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, f * slide), t + dur);
+  gn.gain.setValueAtTime(vol, t); gn.gain.setValueAtTime(0, t + dur);
+  o.connect(gn).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+let noiseBuf = null;
+function noise(dur, vol = 0.12, freq = 1200) {
+  const a = ac(); if (!a) return;
+  if (!noiseBuf) { noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  const s = a.createBufferSource(), f = a.createBiquadFilter(), gn = a.createGain();
+  s.buffer = noiseBuf; f.type = "lowpass"; f.frequency.value = freq;
+  gn.gain.setValueAtTime(vol, a.currentTime); gn.gain.exponentialRampToValueAtTime(0.001, a.currentTime + dur);
+  s.connect(f).connect(gn).connect(a.destination); s.start(); s.stop(a.currentTime + dur);
+}
+let lastShot = 0;
+const sfx = {
+  shot() { const n = performance.now(); if (n - lastShot > 70) { lastShot = n; beep(1800, 0.02, 0, 0.025, 0.6); } },
+  boom() { noise(0.25, 0.14, 900); },
+  big() { noise(1.0, 0.22, 500); beep(110, 0.6, 0, 0.05, 0.4); },
+  hit() { noise(0.5, 0.2, 700); beep(300, 0.4, 0, 0.06, 0.3); },
+  pick() { beep(988, 0.05); beep(1319, 0.05, 0.06); beep(1976, 0.08, 0.12); },
+  bomb() { noise(0.8, 0.25, 2500); },
+  warn() { for (let i = 0; i < 3; i++) { beep(660, 0.18, i * 0.45, 0.05); beep(440, 0.18, i * 0.45 + 0.2, 0.05); } },
+  clear() { [523, 659, 784, 1047, 784, 1047].forEach((f, i) => beep(f, 0.08, i * 0.09)); },
+  ok() { beep(1760, 0.03, 0, 0.04); },
+  over() { [440, 392, 330, 262].forEach((f, i) => beep(f, 0.16, i * 0.18, 0.06)); },
+};
+const sndBtn = document.getElementById("snd");
+function syncSnd() { sndBtn.textContent = muted ? "×" : "♪"; sndBtn.style.opacity = muted ? 0.5 : 1; }
+function toggleSnd() { muted = !muted; store.set("pst.muted", muted); syncSnd(); if (!muted) sfx.ok(); }
+syncSnd(); sndBtn.addEventListener("click", toggleSnd);
+
+// ---------- sprites ----------
+const spr = (rows) => ({ rows, w: rows[0].length, h: rows.length });
+const S = {
+  ship: spr(["11000000", "01111100", "11111111", "01111100", "11000000"]),
+  life: spr(["110", "111", "110"]),
+  ufo: spr(["0011100", "0111110", "1101011", "0111110"]),
+  bat: spr(["100001", "110011", "011110", "110011", "100001"]),
+  gun: spr(["0001110", "0011000", "1111111", "0011000", "0001110"]),
+  dart: spr(["00011", "01110", "11100", "01110", "00011"]),
+  rock: spr(["0011100", "0111110", "1110111", "1111111", "1101111", "0111110", "0011100"]),
+  pebble: spr(["0110", "1111", "1101", "0110"]),
+  boss: [
+    spr(["0000011111100000", "0001111111111000", "0011100000011100", "0111011111101110", "1110110000110111", "1111100110011111",
+         "1111101111011111", "1111101111011111", "1111100110011111", "1110110000110111", "0111011111101110", "0011100000011100",
+         "0001111111111000", "0000011111100000"]),
+    spr(["1100000000000011", "1110000000000111", "0111111111111110", "0011111111111100", "0110011111100110", "1111111111111111",
+         "1101111111111011", "1101100000011011", "0001100000011000", "0011000000001100"]),
+    spr(["0000001111000000", "0000111111110000", "0011111111111100", "0111100110011110", "1111111111111111", "1111111111111111",
+         "0110110110110110", "0100100100100100", "1001001001001001", "0100100100100100"]),
+  ],
+};
+function drawSpr(s, x, y) {
+  x = Math.round(x); y = Math.round(y);
+  for (let r = 0; r < s.h; r++) { const row = s.rows[r]; for (let i = 0; i < s.w; i++) if (row[i] === "1") px(x + i, y + r); }
+}
+
+// ---------- game state ----------
+const TOP = 9;             // play area starts below the HUD
+const ETYPES = {
+  ufo:    { s: S.ufo, hp: 1, pts: 10 },
+  bat:    { s: S.bat, hp: 1, pts: 15 },
+  gun:    { s: S.gun, hp: 3, pts: 30 },
+  dart:   { s: S.dart, hp: 1, pts: 20 },
+  rock:   { s: S.rock, hp: 4, pts: 25 },
+  pebble: { s: S.pebble, hp: 1, pts: 5 },
+};
+const STAGE_LEN = 40;
+let state = "title", stateT = 0, clock = 0;
+let ship = { x: 6, y: 30 }, enemies = [], pshots = [], eshots = [], pickups = [], booms = [], stars = [], boss = null;
+let score = 0, lives = 3, bombs = 1, stage = 1, phase = "intro", phaseT = 0, spawnT = 0, fireCd = 0, spreadT = 0, shield = false, invuln = 0;
+let top = store.get("pst.top", 0), newTop = false;
+
+function setState(s) { state = s; stateT = 0; if (s === "title" || s === "over") { locked = false; layout(); } }
+function makeStars() { stars = []; for (let i = 0; i < 18; i++) stars.push({ x: Math.random() * SW, y: TOP + Math.random() * (SH - TOP), v: 4 + Math.random() * 14 }); }
+makeStars();
+
+function newGame() {
+  locked = false; layout(); locked = true;
+  ship = { x: 6, y: (SH + TOP) / 2 - 2 };
+  enemies = []; pshots = []; eshots = []; pickups = []; booms = []; boss = null;
+  score = 0; lives = 3; bombs = 1; stage = 1; newTop = false;
+  fireCd = 0; spreadT = 0; shield = false; invuln = 2;
+  makeStars(); startStage();
+  setState("play");
+}
+function startStage() { phase = "intro"; phaseT = 0; spawnT = 2.5; }
+const sp = () => 1 + 0.12 * (stage - 1);
+
+function addE(type, x, y, vx, vy, extra) {
+  const t = ETYPES[type];
+  const hp = t.hp + (type === "gun" || type === "rock" ? Math.floor((stage - 1) / 2) : 0);
+  enemies.push({ type, s: t.s, x, y, vx, vy, hp, t: 0, ...extra });
+}
+function spawnFormation() {
+  const pool = ["ufo", "bat", "rock", "ufo"];
+  if (stage >= 2) pool.push("gun", "dart");
+  if (stage >= 3) pool.push("gun", "dart", "bat");
+  const k = pool[rand(pool.length)], lo = TOP + 1, hi = SH - 2, m = sp();
+  if (k === "ufo") { const y = lo + rand(hi - lo - 4), n = 3 + rand(2); for (let i = 0; i < n; i++) addE("ufo", SW + 2 + i * 10, y, -28 * m, 0); }
+  if (k === "bat") { const y = lo + 9 + rand(Math.max(1, hi - lo - 23)); for (let i = 0; i < 5; i++) addE("bat", SW + 2 + i * 9, y, -24 * m, 0, { base: y, ph: i * 0.7, amp: 8 }); }
+  if (k === "rock") { const n = 1 + (Math.random() < 0.4 ? 1 : 0); for (let i = 0; i < n; i++) addE("rock", SW + 2 + i * 22, lo + rand(hi - lo - 7), -13 * m, (Math.random() - 0.5) * 8); }
+  if (k === "gun") { for (let i = 0; i < 2; i++) addE("gun", SW + 2 + i * 12, lo + 4 + rand(hi - lo - 13), -20 * m, 0, { stop: SW * 0.62 + rand(SW * 0.25), cd: 1 + Math.random() }); }
+  if (k === "dart") { for (let i = 0; i < 3; i++) addE("dart", SW + 2 + i * 14, lo + rand(hi - lo - 5), -34 * m, 0); }
+}
+function spawnBoss() {
+  const s = S.boss[(stage - 1) % S.boss.length];
+  boss = { s, x: SW + 2, y: (SH + TOP) / 2 - s.h / 2, hp: 40 + 25 * stage, max: 40 + 25 * stage, t: 0, cd: 2 };
+}
+
+function aimShot(x, y, speed, spread = 0) {
+  const tx = ship.x + 4, ty = ship.y + 2;
+  const a = Math.atan2(ty - y, tx - x) + spread;
+  eshots.push({ x, y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed });
+}
+function boom(x, y, big = false) { booms.push({ x, y, t: 0, big }); }
+function kill(e) {
+  e.dead = true; score += ETYPES[e.type].pts * stage; boom(e.x + e.s.w / 2, e.y + e.s.h / 2); sfx.boom();
+  if (e.type === "rock") { addE("pebble", e.x + 1, e.y, e.vx * 1.2, -14); addE("pebble", e.x + 1, e.y + 3, e.vx * 1.2, 14); }
+  if (Math.random() < 0.1) dropPickup(e.x, e.y);
+}
+function dropPickup(x, y) {
+  const r = Math.random();
+  const kind = r < 0.4 ? "S" : r < 0.7 ? "O" : r < 0.92 ? "B" : "+";
+  pickups.push({ kind, x, y: Math.min(SH - 8, Math.max(TOP, y)) });
+}
+function useBomb() {
+  if (state !== "play" || bombs <= 0) return;
+  bombs--; flash = 0.18; sfx.bomb();
+  for (const e of enemies) if (!e.dead) kill(e);
+  eshots = [];
+  if (boss && boss.x < SW) hurtBoss(15);
+}
+function hurtBoss(n) {
+  boss.hp -= n; boss.flick = 0.06;
+  if (boss.hp <= 0) {
+    score += 500 * stage; sfx.big();
+    const bx = boss.x, by = boss.y, bw = boss.s.w, bh = boss.s.h;
+    booms.push(...Array.from({ length: 10 }, () => ({ x: bx + Math.random() * bw, y: by + Math.random() * bh, t: -Math.random() * 0.8, big: true })));
+    boss = null; eshots = []; phase = "clear"; phaseT = 0; setTimeout(sfx.clear, 600);
+    if (lives < 5 && stage % 2 === 0) lives++;
+  }
+}
+function hitShip() {
+  if (invuln > 0) return;
+  if (shield) { shield = false; invuln = 1; sfx.boom(); return; }
+  lives--; sfx.hit(); boom(ship.x + 4, ship.y + 2, true); spreadT = 0;
+  eshots = eshots.filter((b) => Math.abs(b.x - ship.x) > 30);
+  if (lives <= 0) {
+    if (score > top) { top = score; newTop = true; store.set("pst.top", top); }
+    setState("dying"); setTimeout(sfx.over, 500);
+  } else { invuln = 2.2; }
+}
+const overlap = (ax, ay, aw, ah, bx, by, bw, bh) => ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+
+// ---------- input state ----------
+const keys = new Set();
+let joy = { x: 0, y: 0 }, fireHeld = false;
+
+// ---------- update ----------
+function update(dt) {
+  clock += dt; stateT += dt; flash = Math.max(0, flash - dt);
+  for (const s of stars) { s.x -= s.v * dt * (state === "play" ? sp() : 0.6); if (s.x < 0) { s.x = SW; s.y = TOP + Math.random() * (SH - TOP); } }
+  for (const b of booms) b.t += dt;
+  booms = booms.filter((b) => b.t < (b.big ? 0.5 : 0.3));
+  if (state === "dying") { if (stateT > 1.6) setState("over"); return; }
+  if (state !== "play") return;
+
+  phaseT += dt;
+  invuln = Math.max(0, invuln - dt); spreadT = Math.max(0, spreadT - dt);
+
+  // ship movement
+  let mx = joy.x, my = joy.y;
+  if (keys.has("left")) mx -= 1; if (keys.has("right")) mx += 1;
+  if (keys.has("up")) my -= 1; if (keys.has("down")) my += 1;
+  const ml = Math.hypot(mx, my); if (ml > 1) { mx /= ml; my /= ml; }
+  ship.x = Math.max(0, Math.min(SW * 0.7, ship.x + mx * 46 * dt));
+  ship.y = Math.max(TOP, Math.min(SH - S.ship.h, ship.y + my * 46 * dt));
+
+  // firing
+  fireCd -= dt;
+  if ((fireHeld || keys.has("fire")) && fireCd <= 0 && pshots.length < 14) {
+    fireCd = 0.17;
+    const x = ship.x + 8, y = ship.y + 2;
+    pshots.push({ x, y, vx: 120, vy: 0 });
+    if (spreadT > 0) { pshots.push({ x, y, vx: 115, vy: -32 }, { x, y, vx: 115, vy: 32 }); }
+    sfx.shot();
+  }
+  for (const b of pshots) { b.x += b.vx * dt; b.y += b.vy * dt; }
+  pshots = pshots.filter((b) => b.x < SW + 4 && b.y > TOP - 2 && b.y < SH + 2 && !b.dead);
+
+  // stage flow
+  if (phase === "intro" && phaseT > 2) { phase = "waves"; phaseT = 0; }
+  if (phase === "waves") {
+    spawnT -= dt;
+    if (spawnT <= 0) { spawnFormation(); spawnT = Math.max(1.1, 3 - stage * 0.25) * (0.7 + Math.random() * 0.6); }
+    if (phaseT > STAGE_LEN) { phase = "warn"; phaseT = 0; sfx.warn(); }
+  }
+  if (phase === "warn" && phaseT > 2.6 && enemies.length === 0) { phase = "boss"; phaseT = 0; spawnBoss(); }
+  if (phase === "clear" && phaseT > 3) { stage++; startStage(); }
+
+  // enemies
+  const m = sp();
+  for (const e of enemies) {
+    e.t += dt;
+    if (e.type === "bat") { e.x += e.vx * dt; e.y = e.base + Math.sin(e.t * 3 + e.ph) * e.amp; }
+    else if (e.type === "gun") {
+      if (e.x > e.stop && !e.leaving) e.x += e.vx * dt;
+      else {
+        e.cd -= dt;
+        if (e.cd <= 0 && !e.leaving) { aimShot(e.x, e.y + 2, 34 * m); e.cd = 1.6 / m; e.shots = (e.shots || 0) + 1; if (e.shots >= 3) e.leaving = true; }
+        if (e.leaving) e.x -= 40 * dt;
+      }
+    } else if (e.type === "dart") {
+      e.x += e.vx * dt;
+      const dy = ship.y + 2 - (e.y + 2); e.y += Math.max(-14, Math.min(14, dy * 1.5)) * dt;
+    } else { e.x += e.vx * dt; e.y += e.vy * dt; if (e.y < TOP || e.y + e.s.h > SH) e.vy = -e.vy; }
+    if (e.type === "ufo" && Math.random() < 0.15 * dt * stage && e.x < SW - 4 && e.x > ship.x + 20) aimShot(e.x, e.y + 2, 30 * m);
+    if (e.x < -e.s.w - 2) e.dead = true, e.gone = true;
+  }
+
+  // boss
+  if (boss) {
+    boss.t += dt; boss.flick = Math.max(0, (boss.flick || 0) - dt);
+    const restX = SW - boss.s.w - 4;
+    if (boss.x > restX) boss.x = Math.max(restX, boss.x - 14 * dt);
+    else {
+      const range = (SH - TOP - boss.s.h) / 2 - 1;
+      boss.y = TOP + 1 + range + Math.sin(boss.t * 0.9) * range;
+      boss.cd -= dt;
+      if (boss.cd <= 0) {
+        const cx = boss.x, cy = boss.y + boss.s.h / 2, kind = rand(3);
+        if (kind === 0) { aimShot(cx, cy, 38 * m); aimShot(cx, cy, 38 * m, 0.25); aimShot(cx, cy, 38 * m, -0.25); }
+        else if (kind === 1) { for (let i = -2; i <= 2; i++) eshots.push({ x: cx, y: cy, vx: -34 * m, vy: i * 12 }); }
+        else { addE("ufo", boss.x - 4, boss.y - 2, -30 * m, 0); addE("ufo", boss.x - 4, boss.y + boss.s.h - 2, -30 * m, 0); }
+        boss.cd = Math.max(0.7, 1.6 - stage * 0.1);
+      }
+    }
+  }
+
+  // enemy shots
+  for (const b of eshots) { b.x += b.vx * dt; b.y += b.vy * dt; }
+  eshots = eshots.filter((b) => b.x > -3 && b.x < SW + 3 && b.y > TOP - 3 && b.y < SH + 3 && !b.dead);
+
+  // pickups
+  for (const p of pickups) p.x -= 12 * dt;
+  pickups = pickups.filter((p) => p.x > -8 && !p.taken);
+
+  // collisions: player shots
+  for (const b of pshots) {
+    for (const e of enemies) {
+      if (e.dead || !overlap(b.x, b.y, 3, 1, e.x, e.y, e.s.w, e.s.h)) continue;
+      b.dead = true; if (--e.hp <= 0) kill(e); else e.flick = 0.05; break;
+    }
+    if (!b.dead && boss && boss.x < SW - 2 && overlap(b.x, b.y, 3, 1, boss.x, boss.y, boss.s.w, boss.s.h)) { b.dead = true; hurtBoss(1); }
+  }
+  // ship hitbox is a bit smaller than the sprite, to be fair
+  const hx = ship.x + 1, hy = ship.y + 1, hw = 6, hh = 3;
+  for (const e of enemies) if (!e.dead && overlap(hx, hy, hw, hh, e.x, e.y, e.s.w, e.s.h)) { if (invuln <= 0) kill(e); hitShip(); }
+  if (boss && overlap(hx, hy, hw, hh, boss.x, boss.y, boss.s.w, boss.s.h)) hitShip();
+  for (const b of eshots) if (overlap(hx, hy, hw, hh, b.x - 1, b.y - 1, 2, 2)) { b.dead = true; hitShip(); }
+  for (const p of pickups) if (overlap(ship.x, ship.y, 8, 5, p.x, p.y, 7, 7)) {
+    p.taken = true; sfx.pick(); score += 20;
+    if (p.kind === "S") spreadT = 12; else if (p.kind === "O") shield = true;
+    else if (p.kind === "B") bombs = Math.min(3, bombs + 1); else lives = Math.min(5, lives + 1);
+  }
+  enemies = enemies.filter((e) => !e.dead);
+}
+
+// ---------- render ----------
+function drawHud() {
+  for (let i = 0; i < lives; i++) drawSpr(S.life, 1 + i * 5, 1);
+  const bx = 1 + Math.max(lives, 1) * 5 + 3;
+  text("B" + bombs, bx, 0);
+  if (spreadT > 0 && (spreadT > 3 || Math.floor(clock * 6) % 2)) text("S", bx + 10, 0);
+  if (boss) { // boss health bar
+    const w = 30, x = (SW - w) / 2 | 0;
+    rect(x, 1, w, 1); rect(x, 4, w, 1); rect(x, 1, 1, 4); rect(x + w - 1, 1, 1, 4);
+    rect(x + 1, 2, Math.ceil((w - 2) * Math.max(0, boss.hp) / boss.max), 2);
+  } else if (phase !== "warn") text("S" + stage, (SW / 2 | 0) - 4, 0);
+  text(pad(score), "r", 0);
+  rect(0, 7, SW, 1);
+}
+function drawBoom(b) {
+  if (b.t < 0) return;
+  const max = b.big ? 6 : 4, life = b.big ? 0.5 : 0.3, r = (b.t / life) * max;
+  const n = b.big ? 10 : 8;
+  for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2 + b.x; px(b.x + Math.cos(a) * r, b.y + Math.sin(a) * r); }
+  if (b.t < life * 0.3) rect(b.x - 1, b.y - 1, 2, 2);
+}
+function drawPickup(p) {
+  const x = Math.round(p.x), y = Math.round(p.y);
+  if (Math.floor(clock * 5) % 2) { rect(x, y, 7, 1); rect(x, y + 6, 7, 1); rect(x, y, 1, 7); rect(x + 6, y, 1, 7); }
+  text(p.kind, x + 2, y + 1);
+}
+function drawShip(x, y) {
+  drawSpr(S.ship, x, y);
+  if (fireHeld || keys.has("fire")) { if (Math.floor(clock * 20) % 2) px(x + 8, y + 2); }
+  if (Math.floor(clock * 12) % 2) px(x - 1, y + 2); // engine flicker
+  if (shield) { const sx = Math.round(x) + 10, sy = Math.round(y); rect(sx, sy, 1, 5); px(sx - 1, sy - 1); px(sx - 1, sy + 5); }
+}
+
+function render() {
+  for (const s of stars) px(s.x, s.y);
+  const oy = (SH - 64) / 2 | 0;
+  if (state === "title") {
+    text("POCKET", "c", oy + 10);
+    text("STRIKE", "c", oy + 18, 3);
+    const x = ((clock * 30) % (SW + 30)) - 15;
+    drawSpr(S.ship, x, oy + 38); if (Math.floor(clock * 10) % 2) rect(x + 9, oy + 40, 3, 1);
+    drawSpr(S.ufo, ((x + 40) % (SW + 30)) - 15 + 20, oy + 37);
+    text("TOP " + pad(top), "c", oy + 47);
+    if (Math.floor(clock * 2) % 2 === 0) text(isTouch ? "TAP FIRE" : "PRESS SPACE", "c", oy + 56);
+    return;
+  }
+  if (state === "over") {
+    text("GAME", "c", oy + 8, 2); text("OVER", "c", oy + 20, 2);
+    text("SCORE " + pad(score), "c", oy + 36);
+    text(newTop ? "NEW TOP!" : "TOP " + pad(top), "c", oy + 44);
+    if (stateT > 0.8 && Math.floor(clock * 2) % 2 === 0) text(isTouch ? "TAP FIRE" : "PRESS SPACE", "c", oy + 55);
+    return;
+  }
+  for (const p of pickups) drawPickup(p);
+  for (const e of enemies) { if (e.flick > 0) { e.flick -= 1 / 60; continue; } drawSpr(e.s, e.x, e.y); }
+  if (boss && !(boss.flick > 0)) drawSpr(boss.s, boss.x, boss.y);
+  for (const b of pshots) rect(b.x, b.y, 3, 1);
+  for (const b of eshots) { const x = Math.round(b.x), y = Math.round(b.y); px(x, y - 1); px(x - 1, y); px(x + 1, y); px(x, y + 1); }
+  if (state === "play" && !(invuln > 0 && Math.floor(clock * 10) % 2)) drawShip(ship.x, ship.y);
+  for (const b of booms) drawBoom(b);
+  drawHud();
+  const mid = (SH + TOP) / 2 - 3 | 0;
+  if (state === "play") {
+    if (phase === "intro") text("STAGE " + stage, "c", mid);
+    if (phase === "warn" && Math.floor(phaseT * 3) % 2 === 0) text("WARNING", "c", mid, 1);
+    if (phase === "clear" && phaseT > 0.8) text("STAGE CLEAR", "c", mid);
+  }
+  if (state === "paused") {
+    const w = 40, h = 13, x = (SW - w) / 2 | 0, y = mid - 4;
+    rect(x, y, w, h); for (let i = x + 1; i < x + w - 1; i++) for (let j = y + 1; j < y + h - 1; j++) clr(i, j);
+    text("PAUSED", "c", y + 4);
+  }
+}
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  update(dt); render(); present(dt);
+  requestAnimationFrame(frame);
+}
+layout();
+requestAnimationFrame(frame);
+
+// ---------- input ----------
+function start() {
+  if (state === "title" || (state === "over" && stateT > 0.8)) { sfx.ok(); newGame(); return true; }
+  if (state === "paused") { setState("play"); return true; }
+  return false;
+}
+function pause() { if (state === "play") setState("paused"); else if (state === "paused") setState("play"); }
+const KEYS = {
+  ArrowUp: "up", KeyW: "up", ArrowDown: "down", KeyS: "down", ArrowLeft: "left", KeyA: "left", ArrowRight: "right", KeyD: "right",
+  Space: "fire", KeyZ: "fire", KeyJ: "fire", Enter: "fire",
+};
+addEventListener("keydown", (e) => {
+  if (KEYS[e.code] || ["KeyX", "KeyK", "KeyP", "Escape", "KeyM"].includes(e.code)) e.preventDefault();
+  if (e.repeat) return;
+  if (e.code === "KeyM") return toggleSnd();
+  if (e.code === "KeyP" || e.code === "Escape") return pause();
+  if (e.code === "KeyX" || e.code === "KeyK") return useBomb();
+  const k = KEYS[e.code]; if (!k) return;
+  if (k === "fire" && start()) return;
+  keys.add(k);
+});
+addEventListener("keyup", (e) => { const k = KEYS[e.code]; if (k) keys.delete(k); });
+addEventListener("blur", () => { keys.clear(); fireHeld = false; });
+stage$.addEventListener("pointerdown", () => { if (!start()) pause(); });
+
+const fireBtn = document.getElementById("fire"), bombBtn = document.getElementById("bomb");
+fireBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); try { fireBtn.setPointerCapture(e.pointerId); } catch (_) {} fireBtn.classList.add("on"); if (!start()) fireHeld = true; });
+const fireUp = () => { fireHeld = false; fireBtn.classList.remove("on"); };
+fireBtn.addEventListener("pointerup", fireUp); fireBtn.addEventListener("pointercancel", fireUp);
+bombBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); bombBtn.classList.add("on"); useBomb(); });
+const bombUp = () => bombBtn.classList.remove("on");
+bombBtn.addEventListener("pointerup", bombUp); bombBtn.addEventListener("pointercancel", bombUp); bombBtn.addEventListener("pointerleave", bombUp);
+
+const stick = document.getElementById("stick"), knob = document.getElementById("knob");
+let stickId = null;
+function stickMove(e) {
+  const r = stick.getBoundingClientRect(), rad = r.width / 2;
+  let dx = e.clientX - (r.left + rad), dy = e.clientY - (r.top + rad);
+  const d = Math.hypot(dx, dy), max = rad * 0.6;
+  if (d > max) { dx *= max / d; dy *= max / d; }
+  knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  const n = Math.min(1, d / max);
+  joy = n < 0.2 ? { x: 0, y: 0 } : { x: (dx / max), y: (dy / max) };
+}
+stick.addEventListener("pointerdown", (e) => { e.preventDefault(); stickId = e.pointerId; try { stick.setPointerCapture(e.pointerId); } catch (_) {} stickMove(e); });
+stick.addEventListener("pointermove", (e) => { if (e.pointerId === stickId) stickMove(e); });
+const stickEnd = (e) => { if (e.pointerId !== stickId) return; stickId = null; joy = { x: 0, y: 0 }; knob.style.transform = "translate(-50%, -50%)"; };
+stick.addEventListener("pointerup", stickEnd); stick.addEventListener("pointercancel", stickEnd);
+
+document.addEventListener("visibilitychange", () => { if (document.hidden && state === "play") { keys.clear(); fireHeld = false; setState("paused"); } });
+
+if (location.search.includes("debug")) window.__pst = {
+  get: () => ({ state, phase, stage, score, lives, bombs, enemies: enemies && enemies.length, boss: boss && { hp: boss.hp, x: boss.x }, SW, SH }),
+  skip: (t) => { phaseT = t; }, killBoss: () => boss && hurtBoss(9999), hold: (v) => { fireHeld = v; }, god: () => { invuln = 1e9; },
+};
+})();
+</script>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
