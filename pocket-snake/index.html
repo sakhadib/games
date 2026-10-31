@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Pocket Snake</title>
+<meta name="description" content="Classic snake on a monochrome LCD. Eat dots, chase the mouse, don't bite yourself.">
+<meta name="theme-color" content="#b7c59a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%23b7c59a'/><path d='M2 12h8V6h4' stroke='%231f2a17' stroke-width='3' fill='none'/></svg>">
+<style>
+  :root { --lcd: #b7c59a; --ink: #1f2a17; --ink-soft: rgba(31,42,23,.45); --s: 8px; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(ellipse at 50% 40%, #bccaa0 40%, #a3b287);
+    color: var(--ink); font-family: ui-monospace, Menlo, Consolas, monospace;
+    overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none;
+    display: flex; flex-direction: column; height: 100dvh;
+  }
+  .bar { height: 44px; flex: none; display: flex; justify-content: flex-end; align-items: center; gap: 8px; padding: 0 16px; }
+  .bar a, .bar button {
+    font: 700 13px ui-monospace, monospace; color: var(--ink); background: transparent;
+    border: 2px solid var(--ink); padding: 5px 9px; cursor: pointer; text-decoration: none; line-height: 1;
+  }
+  .bar a:hover, .bar button:hover { background: var(--ink); color: var(--lcd); }
+  #stage { flex: 1; min-height: 0; display: grid; place-items: center; }
+  .lcd { position: relative; }
+  .lcd canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+  .lcd::after { /* LCD pixel grid */
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      linear-gradient(rgba(183,197,154,.4) 1px, transparent 1px) 0 0 / var(--s) var(--s),
+      linear-gradient(90deg, rgba(183,197,154,.4) 1px, transparent 1px) 0 0 / var(--s) var(--s);
+  }
+  #pad { flex: none; display: none; place-items: center; height: 25dvh; padding-bottom: env(safe-area-inset-bottom); }
+  body.touch #pad { display: grid; }
+  #stick { position: relative; width: min(42vw, 19dvh); aspect-ratio: 1; border-radius: 50%;
+    border: 3px solid var(--ink); background: rgba(31,42,23,.06); touch-action: none; }
+  #stick::before { /* direction notches */
+    content: ""; position: absolute; inset: 10%; border-radius: 50%;
+    background:
+      linear-gradient(var(--ink-soft), var(--ink-soft)) 50% 0 / 3px 12% no-repeat,
+      linear-gradient(var(--ink-soft), var(--ink-soft)) 50% 100% / 3px 12% no-repeat,
+      linear-gradient(var(--ink-soft), var(--ink-soft)) 0 50% / 12% 3px no-repeat,
+      linear-gradient(var(--ink-soft), var(--ink-soft)) 100% 50% / 12% 3px no-repeat;
+  }
+  #knob { position: absolute; left: 50%; top: 50%; width: 40%; aspect-ratio: 1; border-radius: 50%;
+    background: var(--ink); transform: translate(-50%, -50%); box-shadow: 0 0 0 4px rgba(183,197,154,.6); }
+  .help { flex: none; text-align: center; font-size: 12px; color: var(--ink-soft); padding: 0 16px 12px; }
+  body.touch .help { display: none; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <button id="snd" title="Sound (M)">♪</button>
+  <a href="../" title="Back to The Oven">⌂</a>
+</div>
+<div id="stage"><div class="lcd" id="lcdbox"><canvas id="lcd"></canvas></div></div>
+<div id="pad"><div id="stick"><div id="knob"></div></div></div>
+<div class="help">arrows · WASD · 2 4 6 8 to steer &nbsp;·&nbsp; space to start / pause &nbsp;·&nbsp; M for sound</div>
+
+<script>
+(() => {
+"use strict";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const isTouch = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+if (isTouch) document.body.classList.add("touch");
+
+// ---------- LCD (size adapts to the screen) ----------
+let SW = 96, SH = 64, SCALE = 8;
+const cv = document.getElementById("lcd"), g = cv.getContext("2d"), box = document.getElementById("lcdbox");
+let img, target, level;
+const BG = [183, 197, 154], INK = [31, 42, 23];
+function allocLCD(w, h) {
+  SW = w; SH = h; cv.width = w; cv.height = h;
+  img = g.createImageData(w, h); target = new Uint8Array(w * h); level = new Float32Array(w * h);
+}
+function px(x, y) { if (x >= 0 && y >= 0 && x < SW && y < SH) target[y * SW + x] = 1; }
+function clr(x, y) { if (x >= 0 && y >= 0 && x < SW && y < SH) target[y * SW + x] = 0; }
+function rect(x, y, w, h) { for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) px(x + i, y + j); }
+function present(dt) {
+  const on = Math.min(1, dt * 40), off = Math.min(1, dt * 9); // light fast, fade slow: LCD smear
+  const d = img.data;
+  for (let i = 0; i < target.length; i++) {
+    let v = level[i];
+    v += target[i] ? (1 - v) * on : -v * off;
+    level[i] = v;
+    const o = i * 4;
+    d[o] = BG[0] + (INK[0] - BG[0]) * v; d[o + 1] = BG[1] + (INK[1] - BG[1]) * v; d[o + 2] = BG[2] + (INK[2] - BG[2]) * v; d[o + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  target.fill(0);
+}
+
+// ---------- 3x5 pixel font ----------
+const F = {
+  "0":"111101101101111","1":"010110010010111","2":"111001111100111","3":"111001111001111","4":"101101111001001",
+  "5":"111100111001111","6":"111100111101111","7":"111001001001001","8":"111101111101111","9":"111101111001111",
+  A:"010101111101101",B:"110101110101110",C:"011100100100011",D:"110101101101110",E:"111100110100111",
+  F:"111100110100100",G:"011100101101011",H:"101101111101101",I:"111010010010111",J:"001001001101010",
+  K:"101101110101101",L:"100100100100111",O:"010101101101010",P:"110101110100100",Q:"010101101110011",
+  R:"110101110101101",S:"011100010001110",T:"111010010010010",U:"101101101101111",V:"101101101101010",
+  X:"101101010101101",Y:"101101010010010",Z:"111001010100111"," ":"000000000000000",
+  "-":"000000111000000","!":"010010010000010",".":"000000000000010","=":"000111000111000",
+  M:["10001","11011","10101","10001","10001"], N:["1001","1101","1011","1001","1001"], W:["10001","10001","10101","11011","10001"],
+  ":":["0","1","0","1","0"],
+};
+function glyph(c) {
+  const f = F[c] || F[" "];
+  return Array.isArray(f) ? f : [f.slice(0, 3), f.slice(3, 6), f.slice(6, 9), f.slice(9, 12), f.slice(12, 15)];
+}
+function textW(s, sc = 1) { let w = 0; for (const c of s) w += (glyph(c)[0].length + 1) * sc; return w - sc; }
+function text(s, x, y, sc = 1) {
+  if (x === "c") x = Math.round((SW - textW(s, sc)) / 2);
+  for (const c of s) {
+    const gl = glyph(c);
+    for (let r = 0; r < 5; r++) for (let i = 0; i < gl[r].length; i++) if (gl[r][i] === "1") rect(x + i * sc, y + r * sc, sc, sc);
+    x += (gl[0].length + 1) * sc;
+  }
+}
+const pad = (n, w = 4) => String(n).padStart(w, "0");
+
+// ---------- audio: square-wave beeps ----------
+let AC = null, muted = store.get("ps.muted", false);
+function beep(f, dur, delay = 0, vol = 0.06, type = "square") {
+  if (muted) return;
+  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  if (AC.state === "suspended") AC.resume();
+  const t = AC.currentTime + delay, o = AC.createOscillator(), gn = AC.createGain();
+  o.type = type; o.frequency.value = f;
+  gn.gain.setValueAtTime(vol, t); gn.gain.setValueAtTime(0, t + dur);
+  o.connect(gn).connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const sfx = {
+  eat() { beep(1320, 0.035); },
+  speed() { beep(880, 0.05); beep(1175, 0.05, 0.07); beep(1568, 0.07, 0.14); },
+  mouse() { beep(2093, 0.03); beep(2637, 0.03, 0.06); },
+  catch() { [1047, 1319, 1568, 2093].forEach((f, i) => beep(f, 0.05, i * 0.05)); },
+  die() { [440, 370, 311, 262, 196].forEach((f, i) => beep(f, 0.09, i * 0.1, 0.07)); },
+  ok() { beep(1760, 0.025, 0, 0.04); },
+};
+const sndBtn = document.getElementById("snd");
+function syncSnd() { sndBtn.textContent = muted ? "×" : "♪"; sndBtn.style.opacity = muted ? 0.5 : 1; }
+function toggleSnd() { muted = !muted; store.set("ps.muted", muted); syncSnd(); if (!muted) sfx.ok(); }
+syncSnd(); sndBtn.addEventListener("click", toggleSnd);
+
+// ---------- layout: grid size follows the screen ----------
+// Field: HUD (8px) above a bordered box of GW x GH cells, 4px each.
+let GW = 23, GH = 13, OX = 2, OY = 10, BX = 0, BY = 8, BWD = 96, BHT = 56, locked = false;
+const DIRS = { up: [0, -1], right: [1, 0], down: [0, 1], left: [-1, 0] };
+const START_TICK = 170, MIN_TICK = 55, SPEEDUP = 0.86, MOUSE_LIFE = 20;
+const stage$ = document.getElementById("stage");
+
+function layout() {
+  const aw = stage$.clientWidth - 24, ah = stage$.clientHeight - 16;
+  if (!locked) {
+    const s = Math.max(3, Math.floor(Math.min(aw, ah) / (isTouch ? 84 : 64)));
+    const w = Math.max(60, Math.floor(aw / s)), h = Math.max(52, Math.floor(ah / s));
+    if (w !== SW || h !== SH || !img) allocLCD(w, h);
+    GW = Math.floor((SW - 4) / 4); GH = Math.floor((SH - 8 - 4) / 4);
+    BWD = GW * 4 + 4; BHT = GH * 4 + 4;
+    BX = Math.floor((SW - BWD) / 2);
+    BY = 8 + Math.floor((SH - 8 - BHT) / 2);
+    OX = BX + 2; OY = BY + 2;
+  }
+  SCALE = Math.max(1, Math.floor(Math.min(aw / SW, ah / SH)));
+  box.style.width = SW * SCALE + "px"; box.style.height = SH * SCALE + "px";
+  document.documentElement.style.setProperty("--s", SCALE + "px");
+}
+addEventListener("resize", layout);
+
+let state = "title", snake, dir, queue, food, mouse, eaten, score, stage, tick, acc, clock = 0, stateT = 0;
+let top = store.get("ps.top", 0), newTop = false, mouseTicks = 0;
+
+function free(x, y) {
+  if (snake.some((s) => s.x === x && s.y === y)) return false;
+  if (food && food.x === x && food.y === y) return false;
+  if (mouse && mouse.x === x && mouse.y === y) return false;
+  return true;
+}
+function randFree(minHeadDist = 0) {
+  for (let i = 0; i < 2000; i++) {
+    const x = (Math.random() * GW) | 0, y = (Math.random() * GH) | 0;
+    if (!free(x, y)) continue;
+    if (Math.abs(x - snake[0].x) + Math.abs(y - snake[0].y) < minHeadDist) continue;
+    return { x, y };
+  }
+  for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) if (free(x, y)) return { x, y };
+  return null;
+}
+
+function newGame() {
+  locked = false; layout(); locked = true;
+  const y = (GH / 2) | 0;
+  const x0 = Math.max(4, (GW / 2 | 0) - 1); snake = [{ x: x0, y }, { x: x0 - 1, y }, { x: x0 - 2, y }, { x: x0 - 3, y }];
+  dir = "right"; queue = []; food = null; mouse = null;
+  eaten = 0; score = 0; stage = 1; tick = START_TICK; acc = 0; newTop = false; mouseTicks = 0;
+  food = randFree(3);
+  setState("play");
+}
+function setState(s) { state = s; stateT = 0; if (s === "title" || s === "over") { locked = false; layout(); } }
+
+const OPP = { up: "down", down: "up", left: "right", right: "left" };
+function steer(d) {
+  if (state !== "play") return;
+  const last = queue.length ? queue[queue.length - 1] : dir;
+  if (d === last || d === OPP[last]) return;       // no reversing into your own neck
+  if (queue.length < 3) queue.push(d);             // buffered turns: quick taps never get lost
+}
+
+function die() { sfx.die(); setState("dying"); if (score > top) { top = score; newTop = true; store.set("ps.top", top); } }
+
+function step() {
+  if (queue.length) dir = queue.shift();
+  const [dx, dy] = DIRS[dir], h = snake[0], nx = h.x + dx, ny = h.y + dy;
+  if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) return die();
+  const grow = food && nx === food.x && ny === food.y;
+  const body = grow ? snake : snake.slice(0, -1);  // the tail moves out of the way unless we grow
+  if (body.some((s) => s.x === nx && s.y === ny)) return die();
+  snake.unshift({ x: nx, y: ny });
+  if (grow) {
+    eaten++; score += stage; sfx.eat();
+    food = randFree(2);
+    if (eaten % 5 === 0) {
+      stage++; tick = Math.max(MIN_TICK, tick * SPEEDUP);
+      setTimeout(sfx.speed, 60);
+      if (!mouse) { const m = randFree(7); if (m) { mouse = { ...m, left: MOUSE_LIFE, frame: 0 }; setTimeout(sfx.mouse, 260); } }
+    }
+  } else snake.pop();
+
+  if (mouse) {
+    if (nx === mouse.x && ny === mouse.y) return catchMouse();
+    if (++mouseTicks % 2 === 0) { moveMouse(); if (--mouse.left <= 0) mouse = null; }
+  }
+}
+
+function catchMouse() {
+  const pts = 5 + mouse.left * stage;
+  score += pts; mouse = null; sfx.catch();
+  snake.push({ ...snake[snake.length - 1] }); // a mouse is a meal: grow by one
+}
+
+function moveMouse() {
+  mouse.frame ^= 1;
+  const h = snake[0], here = Math.abs(mouse.x - h.x) + Math.abs(mouse.y - h.y);
+  const opts = [];
+  for (const k in DIRS) {
+    const x = mouse.x + DIRS[k][0], y = mouse.y + DIRS[k][1];
+    if (x < 0 || y < 0 || x >= GW || y >= GH) continue;
+    if (snake.some((s) => s.x === x && s.y === y) || (food && food.x === x && food.y === y)) continue;
+    opts.push({ x, y, d: Math.abs(x - h.x) + Math.abs(y - h.y) });
+  }
+  if (!opts.length) return;
+  let pick;
+  if (here <= 6 && Math.random() > 0.25) {        // snake is close: run away (but it panics sometimes)
+    const best = Math.max(...opts.map((o) => o.d));
+    const top = opts.filter((o) => o.d === best);
+    pick = top[(Math.random() * top.length) | 0];
+  } else if (Math.random() < 0.5) pick = opts[(Math.random() * opts.length) | 0]; // sniff around
+  if (pick) { mouse.x = pick.x; mouse.y = pick.y; }
+}
+
+// ---------- drawing ----------
+function cellXY(c) { return [OX + c.x * 4, OY + c.y * 4]; }
+function drawFrame() {
+  rect(BX, BY, BWD, 1); rect(BX, BY + BHT - 1, BWD, 1); rect(BX, BY, 1, BHT); rect(BX + BWD - 1, BY, 1, BHT);
+}
+function drawSnake() {
+  for (let i = 0; i < snake.length; i++) {
+    const s = snake[i], [x, y] = cellXY(s);
+    rect(x, y, 3, 3);
+    if (i === 0) clr(x + 1, y + 1); // head has a hollow "eye"
+    const n = snake[i + 1];
+    if (n) { // bridge the 1px gap to the next segment
+      if (n.x === s.x + 1) rect(x + 3, y, 1, 3); else if (n.x === s.x - 1) rect(x - 1, y, 1, 3);
+      else if (n.y === s.y + 1) rect(x, y + 3, 3, 1); else if (n.y === s.y - 1) rect(x, y - 1, 3, 1);
+    }
+  }
+}
+function drawFood() { const [x, y] = cellXY(food); px(x + 1, y); px(x, y + 1); px(x + 2, y + 1); px(x + 1, y + 2); }
+const MOUSE = [["1010", "0111", "1111", "0101"], ["0101", "1110", "1111", "1010"]];
+function drawMouse(m, ox, oy) {
+  const fr = MOUSE[m ? m.frame : 0];
+  for (let r = 0; r < 4; r++) for (let i = 0; i < 4; i++) if (fr[r][i] === "1") px(ox + i, oy + r);
+}
+function drawHud() {
+  const y = BY - 7;
+  text(pad(score), BX + 1, y);
+  const R = BX + BWD - 1;
+  if (mouse) { text(pad(mouse.left, 2), R - 7, y); drawMouse(mouse, R - 13, y); }
+  else for (let i = 0; i < Math.min(stage, 9); i++) rect(R - 2 - i * 3, y + 2, 2, 2); // speed pips
+}
+const PROMPT_START = isTouch ? "TAP TO PLAY" : "PRESS SPACE";
+const PROMPT_AGAIN = isTouch ? "TAP TO RETRY" : "SPACE = AGAIN";
+
+function render() {
+  const cy = SH / 2 | 0;
+  if (state === "title") {
+    text("SNAKE", "c", cy - 24, 3);
+    const t = Math.floor(clock * 8), span = Math.max(20, SW - 36);
+    for (let i = 0; i < 12; i++) { const x = 18 + ((t + i) % span); rect(x, cy + Math.round(Math.sin(x / 5) * 2), 2, 2); }
+    text("TOP " + pad(top), "c", cy + 10);
+    if (Math.floor(clock * 2) % 2 === 0) text(PROMPT_START, "c", cy + 22);
+    return;
+  }
+  if (state === "over") {
+    text("GAME", "c", cy - 28, 2); text("OVER", "c", cy - 15, 2);
+    text("SCORE " + pad(score), "c", cy + 2);
+    text(newTop ? "NEW TOP!" : "TOP " + pad(top), "c", cy + 11);
+    if (stateT > 0.6 && Math.floor(clock * 2) % 2 === 0) text(PROMPT_AGAIN, "c", cy + 24);
+    return;
+  }
+  drawHud(); drawFrame();
+  drawFood();
+  if (mouse) { const [x, y] = cellXY(mouse); drawMouse(mouse, x, y); }
+  if (!(state === "dying" && Math.floor(stateT * 6) % 2 === 1)) drawSnake(); // classic death blink
+  if (state === "paused") {
+    const w = 40, h = 13, x = (SW - w) / 2 | 0, y = cy - 6;
+    rect(x, y, w, h); for (let i = x + 1; i < x + w - 1; i++) for (let j = y + 1; j < y + h - 1; j++) clr(i, j);
+    text("PAUSED", "c", y + 4);
+  }
+}
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  clock += dt; stateT += dt;
+  if (state === "play") {
+    acc += dt * 1000;
+    while (acc >= tick && state === "play") { acc -= tick; step(); }
+  } else if (state === "dying" && stateT > 1.3) setState("over");
+  render(); present(dt);
+  requestAnimationFrame(frame);
+}
+layout();
+requestAnimationFrame(frame);
+
+// ---------- input ----------
+function ok() {
+  if (state === "title" || (state === "over" && stateT > 0.6)) { sfx.ok(); newGame(); }
+  else if (state === "play") setState("paused");
+  else if (state === "paused") { setState("play"); acc = 0; }
+}
+function act(k) {
+  if (k in DIRS) {
+    if (state === "title" || state === "over" || state === "paused") return ok();
+    return steer(k);
+  }
+  if (k === "ok") return ok();
+  if (k === "menu") { if (state === "play") setState("paused"); return; }
+  if (k === "snd") return toggleSnd();
+}
+const KEYS = {
+  ArrowUp: "up", KeyW: "up", Digit2: "up", Numpad2: "up",
+  ArrowDown: "down", KeyS: "down", Digit8: "down", Numpad8: "down",
+  ArrowLeft: "left", KeyA: "left", Digit4: "left", Numpad4: "left",
+  ArrowRight: "right", KeyD: "right", Digit6: "right", Numpad6: "right",
+  Space: "ok", Enter: "ok", Digit5: "ok", Numpad5: "ok", KeyP: "ok",
+  Escape: "menu", KeyM: "snd",
+};
+addEventListener("keydown", (e) => {
+  const k = KEYS[e.code]; if (!k) return;
+  e.preventDefault(); if (e.repeat) return;
+  act(k);
+});
+
+// screen: tap = start/pause, swipe = steer
+let sw = null;
+stage$.addEventListener("pointerdown", (e) => { sw = { x: e.clientX, y: e.clientY }; });
+stage$.addEventListener("pointerup", (e) => {
+  if (!sw) return;
+  const dx = e.clientX - sw.x, dy = e.clientY - sw.y; sw = null;
+  if (Math.hypot(dx, dy) < 18) return act("ok");
+  act(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
+});
+
+// joystick: steer the moment the knob crosses a direction
+const stick = document.getElementById("stick"), knob = document.getElementById("knob");
+let stickId = null, stickDir = null;
+function stickMove(e) {
+  const r = stick.getBoundingClientRect(), rad = r.width / 2;
+  let dx = e.clientX - (r.left + rad), dy = e.clientY - (r.top + rad);
+  const d = Math.hypot(dx, dy), max = rad * 0.6;
+  if (d > max) { dx *= max / d; dy *= max / d; }
+  knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  if (d < rad * 0.22) return;
+  const dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up");
+  if (dir !== stickDir) { stickDir = dir; if (state === "play") steer(dir); }
+}
+stick.addEventListener("pointerdown", (e) => {
+  e.preventDefault(); stickId = e.pointerId; stick.setPointerCapture(e.pointerId); stickDir = null;
+  if (state !== "play") ok(); else stickMove(e);
+});
+stick.addEventListener("pointermove", (e) => { if (e.pointerId === stickId) stickMove(e); });
+const stickEnd = (e) => { if (e.pointerId !== stickId) return; stickId = null; stickDir = null; knob.style.transform = "translate(-50%, -50%)"; };
+stick.addEventListener("pointerup", stickEnd); stick.addEventListener("pointercancel", stickEnd);
+
+document.addEventListener("visibilitychange", () => { if (document.hidden && state === "play") setState("paused"); });
+
+if (location.search.includes("debug")) window.__ps = { get: () => ({ state, snake, dir, queue, food, mouse, score, stage, tick, eaten, GW, GH, SW, SH }), step, steer, newGame, setFood: (x, y) => (food = { x, y }) };
+})();
+</script>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

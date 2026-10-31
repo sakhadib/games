@@ -11,6 +11,7 @@ Every game is a single self-contained HTML file. No installs, no build step, no 
 | Game | Type | Pitch |
 |---|---|---|
 | [The Shifting Dark](https://sakhadib.github.io/games/shifting-dark/) | 2D maze | Your torch shows almost nothing, and the maze rewrites itself wherever it isn't lit. Find the door before it moves. |
+| [Pocket Snake](https://sakhadib.github.io/games/pocket-snake/) | 2D arcade | Classic snake on a little black-and-white phone screen. Eat dots, chase the runaway mouse, and don't bite yourself. |
 
 ## How it works
 
