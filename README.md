@@ -34,8 +34,9 @@ Want your game on the shelf?
 
 1. [Fork this repo](https://github.com/sakhadib/games/fork).
 2. Add a folder named after your game (lowercase-with-dashes) with a self-contained `index.html` inside. Keep it to one file if you can, and load any libraries from a CDN.
-3. Add your game to the `GAMES` list near the bottom of the root `index.html`.
-4. Open a pull request with a short pitch and a screenshot.
+3. Paste the analytics tag from the root `index.html` (the `goatcounter` script) right before `</body>` so your game's plays get counted.
+4. Add your game to the `GAMES` list near the bottom of the root `index.html`.
+5. Open a pull request with a short pitch and a screenshot.
 
 Games should run offline-ish (no servers or API keys), work on desktop, and ideally on phones too.
 

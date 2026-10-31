@@ -133,6 +133,8 @@
   .cart h3 { font-family: "Press Start 2P", monospace; font-size: 11px; line-height: 1.6; margin: 0 0 6px; }
   .cart p { margin: 0; font-size: 13px; color: var(--muted); }
   .cart .meta { margin-top: 10px; font-size: 11px; color: var(--mint); text-transform: uppercase; letter-spacing: 1px; }
+  .cart .plays { position: absolute; top: 22px; right: 22px; font-family: "Press Start 2P", monospace; font-size: 9px; color: var(--gold); background: rgba(20,17,15,.85); padding: 6px 7px; opacity: 0; transition: opacity .3s; }
+  .cart .plays.on { opacity: 1; }
 
   /* empty slot */
   .slot {
@@ -233,8 +235,22 @@
         <h3>${g.title}</h3>
         <p>${g.blurb}</p>
         <div class="meta">${g.kind || ""}</div>
+        <span class="plays" data-slug="${g.slug}"></span>
       </a>`).join("");
+    loadPlays();
+  }
+
+  // Play counts from GoatCounter (cached on their side for up to ~4h).
+  function loadPlays() {
+    document.querySelectorAll(".plays").forEach(el => {
+      const path = new URL(el.dataset.slug + "/", location.href).pathname;
+      fetch("https://sakhadib.goatcounter.com/counter/" + encodeURIComponent(path) + ".json")
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d && d.count) { el.textContent = "▶ " + d.count + " PLAYS"; el.classList.add("on"); } })
+        .catch(() => {});
+    });
   }
 </script>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
