@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contribution Rules · The Oven</title>
+<meta name="description" content="How to add your own small browser game to The Oven: rules, technical requirements, and how to open a pull request.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#14110f">
+<link rel="canonical" href="https://sakhadib.github.io/games/contributing.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Oven">
+<meta property="og:title" content="Contribution Rules · The Oven">
+<meta property="og:description" content="How to add your own small browser game to The Oven: rules, technical requirements, and how to open a pull request.">
+<meta property="og:url" content="https://sakhadib.github.io/games/contributing.html">
+<meta property="og:image" content="https://sakhadib.github.io/games/assets/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%2314110f'/><rect x='3' y='5' width='10' height='8' fill='%23ff5d3a'/><rect x='5' y='7' width='6' height='4' fill='%23ffd166'/><rect x='4' y='3' width='2' height='2' fill='%23f2e8cf'/><rect x='10' y='3' width='2' height='2' fill='%23f2e8cf'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebPage", "name": "Contribution Rules", "url": "https://sakhadib.github.io/games/contributing.html", "description": "How to add your own small browser game to The Oven: rules, technical requirements, and how to open a pull request.", "isPartOf": {"@type": "WebSite", "name": "The Oven", "url": "https://sakhadib.github.io/games/"}}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><a class="logo" href="./">THE OVEN<span>*</span></a><a class="back" href="./">← back to the games</a></div>
+  <main>
+
+<h1>Contribution Rules</h1>
+<p class="updated">Last updated: 1 November 2026</p>
+<p>The Oven is a quiet place: small games, no ads, no accounts, no pressure. If you'd like to add a game to the shelf, you're welcome here. These rules keep it that way.</p>
+<div class="tldr"><b>THE SHORT VERSION</b><ul>
+<li>One game, one folder, ideally one HTML file.</li>
+<li>Your own work. No ripped sprites, music or brand names.</li>
+<li>No ads, no trackers, no logins, no data leaving the player's device.</li>
+<li>Works on desktop, and ideally on phones too.</li>
+</ul></div>
+
+<h2>1. What fits the shelf</h2>
+<ul>
+<li><strong>Small, single-player browser games</strong> you can start in seconds. Arcade, puzzle, retro remakes, toys, strange experiments: all welcome.</li>
+<li><strong>Family-friendly.</strong> No gore, sexual content, hate, or real-world politics.</li>
+<li><strong>Relaxing to pick up.</strong> No energy timers, no "come back tomorrow" mechanics, no dark patterns.</li>
+</ul>
+
+<h2>2. Hard rules</h2>
+<ol>
+<li><strong>No ads, no monetization, no donations prompts</strong> inside games.</li>
+<li><strong>No tracking or data collection.</strong> The only allowed network calls are: loading open-source libraries from a public CDN, Google Fonts, and the site's analytics tag (below). No fetch/XHR to other servers, no third-party analytics, no fingerprinting.</li>
+<li><strong>No accounts or logins.</strong> Save progress with <code>localStorage</code>, and prefix your keys with your game's folder name (for example <code>your-game.best</code>) so games don't overwrite each other.</li>
+<li><strong>Original or properly licensed content only.</strong> Write your own code and make your own art and sound, or use assets whose license allows it, with credit in a comment. Don't use copyrighted characters, ripped game sprites or music, or company names and logos. "Inspired by" a classic is fine; a copy is not. Give it its own name.</li>
+<li><strong>No malicious or annoying behavior:</strong> no popups, no redirects, no crypto mining, nothing that touches other games' storage.</li>
+</ol>
+
+<h2>3. Technical requirements</h2>
+<ul>
+<li>Put your game in its own folder at the repo root, named in <code>lowercase-with-dashes</code>, with an <code>index.html</code> inside. One self-contained file is preferred.</li>
+<li>Libraries come from a CDN (<code>cdnjs.cloudflare.com</code>, <code>cdn.jsdelivr.net</code> or <code>unpkg.com</code>) with an <strong>exact pinned version</strong>, for example <code>three@0.160.0</code>.</li>
+<li>Keep it light: aim for under 1&nbsp;MB for the whole folder; 5&nbsp;MB is the hard limit.</li>
+<li>Include a small home link back to the shelf (<code>href="../"</code>).</li>
+<li><strong>Controls:</strong> keyboard on desktop. If it can work on phones, add touch controls (on-screen buttons, joystick or swipe).</li>
+<li>Pause when the tab is hidden, and don't play sound until the player has pressed something.</li>
+<li>If your game flashes or strobes, keep it gentle and respect <code>prefers-reduced-motion</code> where you can.</li>
+<li>No errors in the browser console during normal play.</li>
+</ul>
+
+<h2>4. Make it findable</h2>
+<p>Add these tags inside your game's <code>&lt;head&gt;</code> (replace <code>your-game</code> and the text):</p>
+<pre><code>&lt;meta name=&quot;description&quot; content=&quot;One or two sentences about your game.&quot;&gt;
+&lt;link rel=&quot;canonical&quot; href=&quot;https://sakhadib.github.io/games/your-game/&quot;&gt;
+&lt;meta property=&quot;og:type&quot; content=&quot;website&quot;&gt;
+&lt;meta property=&quot;og:site_name&quot; content=&quot;The Oven&quot;&gt;
+&lt;meta property=&quot;og:title&quot; content=&quot;Your Game · The Oven&quot;&gt;
+&lt;meta property=&quot;og:description&quot; content=&quot;Same as the description.&quot;&gt;
+&lt;meta property=&quot;og:url&quot; content=&quot;https://sakhadib.github.io/games/your-game/&quot;&gt;
+&lt;meta property=&quot;og:image&quot; content=&quot;https://sakhadib.github.io/games/assets/shots/your-game.jpg&quot;&gt;
+&lt;meta name=&quot;twitter:card&quot; content=&quot;summary_large_image&quot;&gt;</code></pre>
+<p>Add the analytics tag right before <code>&lt;/body&gt;</code> so plays get counted:</p>
+<pre><code>&lt;script data-goatcounter=&quot;https://sakhadib.goatcounter.com/count&quot; async src=&quot;//gc.zgo.at/count.js&quot;&gt;&lt;/script&gt;</code></pre>
+<p>Add a 1200×630 gameplay screenshot as <code>assets/shots/your-game.jpg</code> (JPEG, ideally under 80&nbsp;KB). It's used both on the shelf and when people share the link.</p>
+
+<h2>5. Put it on the shelf</h2>
+<ol>
+<li>In the root <code>index.html</code>, copy one game card, paste it at the <strong>end</strong> of the shelf list (newest goes last), and fill it in:
+<pre><code>&lt;a class=&quot;cart&quot; href=&quot;your-game/&quot; data-title=&quot;Your Game&quot; data-tags=&quot;2d puzzle&quot; data-added=&quot;2026-12-01&quot; style=&quot;--c:#7ae0b4&quot;&gt;
+  &lt;div class=&quot;thumb&quot;&gt;&lt;span class=&quot;g&quot; aria-hidden=&quot;true&quot;&gt;?&lt;/span&gt;&lt;img src=&quot;assets/shots/your-game.jpg&quot; alt=&quot;Your Game gameplay&quot; loading=&quot;lazy&quot; width=&quot;1200&quot; height=&quot;630&quot;&gt;&lt;/div&gt;
+  &lt;div class=&quot;body&quot;&gt;
+    &lt;h3&gt;Your Game&lt;/h3&gt;
+    &lt;p&gt;One-line pitch. Keep it short.&lt;/p&gt;
+    &lt;div class=&quot;tags&quot;&gt;&lt;span&gt;2D&lt;/span&gt;&lt;span&gt;puzzle&lt;/span&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/a&gt;</code></pre>
+Tags should be lowercase, single words. Reuse existing tags when they fit (<code>2d</code>, <code>3d</code>, <code>arcade</code>, <code>puzzle</code>, <code>platformer</code>, <code>shooter</code>, <code>maze</code>, <code>retro</code>, <code>endless</code>, <code>classic</code>).</li>
+<li>Add your game to the <code>hasPart</code> list in the JSON-LD block at the top of <code>index.html</code>.</li>
+<li>Add your game's URL to <code>sitemap.xml</code>.</li>
+<li>Add a row to the table in <code>README.md</code>.</li>
+</ol>
+
+<h2>6. Opening the pull request</h2>
+<ol>
+<li><a href="https://github.com/sakhadib/games/fork">Fork the repo</a> and make your changes on a branch.</li>
+<li>Open a <a href="https://github.com/sakhadib/games/pulls">pull request</a> titled <code>Add game: Your Game</code>.</li>
+<li>In the description, include: a one-line pitch, how to play, a screenshot, and which devices and browsers you tested on.</li>
+<li>One game per pull request, please.</li>
+</ol>
+
+<h2>7. Review</h2>
+<p>Every pull request is reviewed and played before it's merged. We may ask for changes, and we may decline games that don't fit the site, even if they follow every rule. We can also fix small bugs in a game later or remove a game that stops following these rules.</p>
+
+<h2>8. Credit and rights</h2>
+<p>You keep the credit for your game: put your name in a comment at the top of your file and in your pull request, and it will be credited. By submitting, you confirm that you have the right to share everything in your game, and you agree that it can be hosted here, played for free by anyone, and edited for maintenance (bug fixes, compatibility, keeping the site's rules).</p>
+
+<h2>9. Bugs and ideas</h2>
+<p>Not a game, but found a bug or have an idea? <a href="https://github.com/sakhadib/games/issues">Open an issue</a>. Small fixes to existing games are welcome as pull requests too.</p>
+
+  </main>
+  <footer>
+    <span>Made in partnership by <a href="https://portfolio.sakhawatadib.com" rel="author">Sakhawat Adib</a> &amp; Claude</span>
+    <nav aria-label="Site"><a href="contributing.html">Contribute</a><a href="terms.html">Terms</a><a href="privacy.html">Privacy</a><a href="https://github.com/sakhadib/games">GitHub</a><a href="https://portfolio.sakhawatadib.com">Portfolio</a></nav>
+  </footer>
+</div>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

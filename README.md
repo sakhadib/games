@@ -24,24 +24,24 @@ Every game is a single self-contained HTML file. No installs, no build step, no 
 ## Structure
 
 ```
-index.html          ← the home page / game shelf
+index.html            ← the home page / game shelf (static cards, search, filters)
 <game-name>/
-  index.html        ← one game, fully self-contained
+  index.html          ← one game, fully self-contained
+assets/shots/         ← 1200×630 screenshots used on the shelf and for link previews
+assets/site.css       ← shared style for the text pages
+contributing.html     ← contribution rules
+terms.html, privacy.html, 404.html
+sitemap.xml, manifest.webmanifest
 ```
-
-To add a game to the shelf, drop its folder in the repo and add an entry to the `GAMES` list near the bottom of `index.html`.
 
 ## Bake your own
 
-Want your game on the shelf?
+Want your game on the shelf? Read the [contribution rules](https://sakhadib.github.io/games/contributing.html), then:
 
 1. [Fork this repo](https://github.com/sakhadib/games/fork).
-2. Add a folder named after your game (lowercase-with-dashes) with a self-contained `index.html` inside. Keep it to one file if you can, and load any libraries from a CDN.
-3. Paste the analytics tag from the root `index.html` (the `goatcounter` script) right before `</body>` so your game's plays get counted.
-4. Add your game to the `GAMES` list near the bottom of the root `index.html`.
-5. Open a pull request with a short pitch and a screenshot.
-
-Games should run offline-ish (no servers or API keys), work on desktop, and ideally on phones too.
+2. Add your game as `your-game/index.html`, plus a screenshot at `assets/shots/your-game.jpg`.
+3. Add a card at the end of the shelf in `index.html`, and list the game in `sitemap.xml` and the table above.
+4. Open a pull request with a short pitch and a screenshot.
 
 ## Tech
 
@@ -52,5 +52,7 @@ Games should run offline-ish (no servers or API keys), work on desktop, and idea
 
 ## Credits
 
-- Ideas and direction: [@sakhadib](https://github.com/sakhadib)
+- Ideas and direction: [Sakhawat Adib](https://portfolio.sakhawatadib.com) ([@sakhadib](https://github.com/sakhadib))
 - Code: written by Claude, an AI model by [Anthropic](https://www.anthropic.com). Commits carry a `Co-Authored-By: Claude` line, so you can see exactly which work came from it.
+
+See also: [Terms](https://sakhadib.github.io/games/terms.html) · [Privacy](https://sakhadib.github.io/games/privacy.html)

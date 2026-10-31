@@ -1,0 +1,34 @@
+/* Shared style for The Oven's text pages (terms, privacy, contributing, 404). */
+:root {
+  --bg: #14110f; --bg-2: #1d1916; --ink: #f2e8cf; --muted: #a39a86;
+  --hot: #ff5d3a; --gold: #ffd166; --mint: #7ae0b4; --line: #3a332c;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: "Space Mono", ui-monospace, monospace; font-size: 15.5px; line-height: 1.75; }
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 30;
+  background: repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.14) 2px 3px); }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+.top { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; border-bottom: 2px solid var(--line); }
+.logo { font-family: "Press Start 2P", monospace; font-size: 13px; text-decoration: none; color: var(--ink); text-shadow: 2px 2px 0 var(--hot); }
+.logo span { color: var(--gold); }
+.top a.back { font-size: 13px; color: var(--muted); }
+h1 { font-family: "Press Start 2P", monospace; font-size: clamp(20px, 5vw, 30px); line-height: 1.35; margin: 36px 0 8px; text-shadow: 3px 3px 0 var(--hot); }
+.updated { color: var(--muted); font-size: 13px; margin: 0 0 24px; }
+h2 { font-family: "Press Start 2P", monospace; font-size: 12px; line-height: 1.6; margin: 36px 0 10px; color: var(--gold); }
+h3 { font-size: 15px; margin: 22px 0 6px; }
+p, li { color: #d9cfb8; }
+a { color: var(--ink); }
+strong, b { color: var(--ink); }
+ul, ol { padding-left: 22px; }
+li { margin: 4px 0; }
+code { font-family: "Space Mono", monospace; background: var(--bg-2); border: 1px solid var(--line); padding: 0 5px; font-size: 13.5px; }
+pre { background: var(--bg-2); border: 2px solid var(--line); padding: 14px; overflow-x: auto; font-size: 12.5px; line-height: 1.6; }
+pre code { background: none; border: 0; padding: 0; }
+.note { border-left: 4px solid var(--mint); background: var(--bg-2); padding: 10px 14px; margin: 18px 0; }
+.note.warn { border-color: var(--hot); }
+.tldr { border: 2px solid var(--line); background: var(--bg-2); padding: 14px 18px; margin: 20px 0; }
+.tldr b { font-family: "Press Start 2P", monospace; font-size: 10px; color: var(--mint); display: block; margin-bottom: 4px; }
+.tldr ul { margin: 0; }
+footer { margin: 56px 0 0; padding: 20px 0 36px; border-top: 2px solid var(--line); font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 8px 22px; justify-content: space-between; }
+footer nav { display: flex; flex-wrap: wrap; gap: 6px 16px; }
