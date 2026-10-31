@@ -28,6 +28,17 @@ index.html          ← the home page / game shelf
 
 To add a game to the shelf, drop its folder in the repo and add an entry to the `GAMES` list near the bottom of `index.html`.
 
+## Bake your own
+
+Want your game on the shelf?
+
+1. [Fork this repo](https://github.com/sakhadib/games/fork).
+2. Add a folder named after your game (lowercase-with-dashes) with a self-contained `index.html` inside. Keep it to one file if you can, and load any libraries from a CDN.
+3. Add your game to the `GAMES` list near the bottom of the root `index.html`.
+4. Open a pull request with a short pitch and a screenshot.
+
+Games should run offline-ish (no servers or API keys), work on desktop, and ideally on phones too.
+
 ## Tech
 
 - Canvas 2D for flat games, [Three.js](https://threejs.org/) from a CDN for 3D

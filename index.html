@@ -124,8 +124,8 @@
     aspect-ratio: 4 / 3;
     background: var(--c, var(--hot));
     display: grid; place-items: center;
-    font-family: "Press Start 2P", monospace;
-    font-size: 28px;
+    font-family: "Press Start 2P", system-ui, sans-serif;
+    font-size: 56px;
     color: var(--bg);
     margin-bottom: 12px;
     image-rendering: pixelated;
@@ -189,7 +189,7 @@
   <header>
     <div class="tag">INDIE ▸ TINY ▸ FREE</div>
     <h1>THE<br>OVEN<span class="flame">*</span></h1>
-    <p class="lede">A shelf of small games you can play right in your browser. <b>Adib bakes the ideas.</b> <b>Claude builds them.</b> No installs, no accounts, just press start.</p>
+    <p class="lede">A shelf of small, strange games you can play right in your browser. <b>No installs. No accounts.</b> Just press start.</p>
     <div class="ticker" aria-hidden="true"><span>★ INSERT COIN ★ FRESH GAMES OUT OF THE OVEN ★ ONE FILE EACH ★ PLAYS ON PHONE &amp; DESKTOP ★ 2D &amp; 3D ★ HIGH SCORES SAVED LOCALLY ★</span></div>
   </header>
 
@@ -197,16 +197,17 @@
     <h2>THE SHELF</h2>
     <div class="shelf" id="shelf"></div>
 
-    <h2>HOW IT'S MADE</h2>
+    <h2>BAKE YOUR OWN</h2>
+    <p class="lede" style="margin-bottom:22px">Got a game in you? The oven's open. Every game here is one HTML file, so yours can be too.</p>
     <div class="how">
-      <div><b>01 · BAKE</b><p>Adib drops a game idea, rough or polished.</p></div>
-      <div><b>02 · BUILD</b><p>Claude turns it into a single self-contained HTML file.</p></div>
-      <div><b>03 · PLAY</b><p>It lands here on the shelf, live on GitHub Pages.</p></div>
+      <div><b>01 · FORK</b><p><a href="https://github.com/sakhadib/games/fork" style="color:var(--ink)">Fork the repo</a> on GitHub.</p></div>
+      <div><b>02 · BUILD</b><p>Make a folder with your game in <code>index.html</code>, and add it to the shelf list.</p></div>
+      <div><b>03 · PULL REQUEST</b><p>Open a <a href="https://github.com/sakhadib/games/pulls" style="color:var(--ink)">pull request</a>. Once it's merged, your game goes on the shelf.</p></div>
     </div>
   </main>
 
   <footer>
-    <span>Ideas by <a href="https://github.com/sakhadib">@sakhadib</a> · Games built with Claude (Anthropic)</span>
+    <span>Made in partnership by <a href="https://github.com/sakhadib">@sakhadib</a> &amp; Claude</span>
     <span><a href="https://github.com/sakhadib/games">source on GitHub</a></span>
   </footer>
 </div>
