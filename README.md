@@ -6,6 +6,12 @@ Every game is a single self-contained HTML file. No installs, no build step, no 
 
 **Play:** https://sakhadib.github.io/games/
 
+## On the shelf
+
+| Game | Type | Pitch |
+|---|---|---|
+| [The Shifting Dark](https://sakhadib.github.io/games/shifting-dark/) | 2D maze | Your torch shows almost nothing, and the maze rewrites itself wherever it isn't lit. Find the door before it moves. |
+
 ## How it works
 
 1. **Bake** — Adib comes up with a game idea, rough or polished.
