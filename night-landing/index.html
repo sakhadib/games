@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Night Landing · UFO city bomber | The Oven</title>
+<meta name="description" content="A free UFO city bomber in your browser, inspired by the classic Blitz mini-game. Your saucer sinks lower each pass over a dark city; drop one bomb at a time to clear a path and land safely. No ads, works on mobile.">
+<meta name="keywords" content="blitz game, city bomber, ufo bomber game, bomb the buildings game, classic pc mini game, one button game, browser game, no ads">
+<meta name="author" content="Sakhawat Adib">
+<link rel="canonical" href="https://sakhadib.github.io/games/night-landing/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Oven">
+<meta property="og:title" content="Night Landing · The Oven">
+<meta property="og:description" content="Your UFO sinks lower every pass. Clear the skyline one bomb at a time and land. No ads.">
+<meta property="og:url" content="https://sakhadib.github.io/games/night-landing/">
+<meta property="og:image" content="https://sakhadib.github.io/games/assets/shots/night-landing.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sakhadib.github.io/games/assets/shots/night-landing.jpg">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Night Landing","url":"https://sakhadib.github.io/games/night-landing/","description":"A UFO city bomber inspired by the classic Blitz mini-game. Your saucer sinks lower each pass over a dark city; drop one bomb at a time to clear a path and land safely.","image":"https://sakhadib.github.io/games/assets/shots/night-landing.jpg","genre":["Arcade"],"gamePlatform":["Web browser","Mobile","Desktop"],"applicationCategory":"Game","operatingSystem":"Any","playMode":"SinglePlayer","isAccessibleForFree":true,"inLanguage":"en","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Sakhawat Adib","url":"https://portfolio.sakhawatadib.com"},"isPartOf":{"@type":"WebSite","name":"The Oven","url":"https://sakhadib.github.io/games/"}}</script>
+<meta name="theme-color" content="#0b0d1a">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='4' fill='%230b0d1a'/><ellipse cx='8' cy='6' rx='5' ry='1.8' fill='%238fd3ff'/><ellipse cx='8' cy='5' rx='2.2' ry='1.6' fill='%23d6f0ff'/><rect x='2' y='10' width='3' height='6' fill='%23252a44'/><rect x='6' y='12' width='3' height='4' fill='%23252a44'/><rect x='11' y='9' width='3' height='7' fill='%23252a44'/></svg>">
+<style>
+  :root { --ink: #e6e9ff; --muted: #8a90b8; --glow: #8fd3ff; --warm: #ffb86b; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b0d1a; }
+  body { font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink);
+    touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; display: block; }
+  #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 14px 18px; pointer-events: none; z-index: 3; }
+  .lv { font-size: 12px; font-weight: 700; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+  #level { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  #score { font-size: 14px; font-weight: 700; color: var(--glow); margin-top: 2px; }
+  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .btns { display: flex; gap: 6px; pointer-events: auto; }
+  .btn { font: 700 13px system-ui; color: var(--ink); background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 8px 11px; cursor: pointer; text-decoration: none; line-height: 1; backdrop-filter: blur(6px); }
+  #best { font-size: 12px; font-weight: 700; color: var(--muted); }
+  #ov { position: fixed; inset: 0; display: none; place-items: center; z-index: 10; padding: 16px; background: rgba(5,6,14,.45); backdrop-filter: blur(4px); }
+  #ov.show { display: grid; }
+  .card { width: 100%; max-width: 360px; background: rgba(22,25,48,.82); border: 1px solid rgba(143,211,255,.14); border-radius: 24px; padding: 26px 24px; text-align: center; box-shadow: 0 30px 70px rgba(0,0,0,.5); }
+  .card .kicker { font-size: 11px; font-weight: 700; letter-spacing: 4px; color: var(--muted); text-transform: uppercase; }
+  .card h1 { margin: 6px 0 8px; font-size: 32px; font-weight: 800; letter-spacing: -1px; line-height: 1.05; }
+  .card h1 span { color: var(--glow); }
+  .card p { margin: 8px 0; color: #b4b9dc; font-size: 14.5px; line-height: 1.55; }
+  .big { font-size: 46px; font-weight: 800; letter-spacing: -1.5px; margin: 2px 0; }
+  .rows { display: grid; grid-template-columns: 1fr auto; gap: 5px 14px; text-align: left; margin: 12px auto; max-width: 230px; font-size: 14px; color: #b4b9dc; }
+  .rows b { color: var(--ink); text-align: right; }
+  .go { display: inline-block; margin-top: 14px; background: linear-gradient(180deg, #a8e0ff, #6fbfee); color: #0b0d1a; font-weight: 800; padding: 13px 22px; border-radius: 16px; box-shadow: 0 0 30px rgba(143,211,255,.25); }
+  kbd { font: 700 12px system-ui; background: rgba(255,255,255,.1); border-radius: 6px; padding: 1px 6px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div><div class="lv">Level</div><div id="level">1</div><div id="score">0</div></div>
+  <div class="right">
+    <div class="btns"><button class="btn" id="snd" title="Sound (M)">♪</button><a class="btn" href="../" title="Back to The Oven">⌂</a></div>
+    <div id="best">BEST 0</div>
+  </div>
+</div>
+<div id="ov" class="show"><div class="card" id="card"></div></div>
+
+<script>
+(() => {
+"use strict";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const isTouch = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+// ---------- world: 400 x 250, ground at 232 ----------
+const W = 400, H = 250, GROUND = 232, COLS = 20, CW = W / COLS, FH = 9, STEP = 12, START_Y = 26;
+const cv = $("#c"), ctx = cv.getContext("2d");
+let DPR = 1, VW = 0, VH = 0, S = 1, OX = 0, OY = 0;
+function resize() {
+  DPR = Math.min(2, devicePixelRatio || 1); VW = innerWidth; VH = innerHeight;
+  cv.width = VW * DPR; cv.height = VH * DPR; cv.style.width = VW + "px"; cv.style.height = VH + "px";
+  S = Math.min(VW / W, (VH - 20) / H); OX = (VW - W * S) / 2; OY = Math.max(10, (VH - H * S) * 0.62);
+  makeSkyline();
+}
+addEventListener("resize", resize);
+
+// ---------- audio: soft synth ----------
+let AC = null, muted = store.get("nl.muted", false), hum = null;
+function ac() { if (muted) return null; try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } if (AC.state === "suspended") AC.resume(); return AC; }
+function tone(f, dur, type = "sine", vol = 0.08, slide = 0, delay = 0) {
+  const a = ac(); if (!a) return;
+  const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f * slide), t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+function boomNoise(vol = 0.18, dur = 0.6, f = 500) {
+  const a = ac(); if (!a) return;
+  const b = a.createBuffer(1, a.sampleRate * dur, a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+  const s = a.createBufferSource(), fl = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = b; fl.type = "lowpass"; fl.frequency.value = f; g.gain.value = vol; s.connect(fl).connect(g).connect(a.destination); s.start();
+}
+function setHum(on) {
+  const a = ac();
+  if (on && a && !hum) {
+    const o = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain(), lfo = a.createOscillator(), lg = a.createGain();
+    o.type = "sine"; o.frequency.value = 74; o2.type = "sine"; o2.frequency.value = 111; g.gain.value = 0.025;
+    lfo.frequency.value = 0.7; lg.gain.value = 6; lfo.connect(lg).connect(o.frequency);
+    o.connect(g); o2.connect(g); g.connect(a.destination); o.start(); o2.start(); lfo.start();
+    hum = { o, o2, g, lfo };
+  } else if (!on && hum) { try { hum.o.stop(); hum.o2.stop(); hum.lfo.stop(); } catch (e) {} hum = null; }
+}
+const sfx = {
+  drop() { tone(620, 0.35, "sine", 0.05, 0.4); },
+  boom(n) { boomNoise(0.16 + n * 0.03, 0.55, 420); tone(70, 0.4, "sine", 0.12, 0.6); },
+  thud() { boomNoise(0.08, 0.3, 300); },
+  pass() { tone(330, 0.25, "sine", 0.03, 0.85); },
+  crash() { boomNoise(0.35, 1.4, 600); tone(110, 1.2, "sawtooth", 0.05, 0.3); },
+  land() { [392, 494, 587, 784].forEach((f, i) => tone(f, 0.5, "sine", 0.06, 0, i * 0.13)); },
+  ok() { tone(660, 0.12, "sine", 0.06); },
+};
+const sndBtn = $("#snd");
+function syncSnd() { sndBtn.textContent = muted ? "×" : "♪"; sndBtn.style.opacity = muted ? 0.5 : 1; }
+function toggleSnd() { muted = !muted; store.set("nl.muted", muted); syncSnd(); if (muted) setHum(false); else { sfx.ok(); if (state === "play") setHum(true); } }
+syncSnd(); sndBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleSnd(); });
+
+// ---------- state ----------
+let state = "title", stateT = 0, clock = 0, level = 1, score = 0, levelScore = 0;
+let ufo, bomb, cols, debris, flashes, dust, floatTxt, msg;
+let best = store.get("nl.best", 0), bestLevel = store.get("nl.bestLevel", 0);
+
+function buildCity(L) {
+  cols = [];
+  const maxH = Math.min(17, 5 + L * 2), minH = Math.min(6, 1 + Math.floor(L / 2));
+  for (let i = 0; i < COLS; i++) {
+    if (i < 2 || i >= COLS - 1) { cols.push(null); continue; }
+    if (Math.random() < Math.max(0.05, 0.22 - L * 0.03)) { cols.push(null); continue; } // a gap
+    const h = Math.round(rnd(minH, maxH));
+    const wins = []; for (let f = 0; f < 20; f++) wins.push([Math.random() < 0.38, Math.random() < 0.38, Math.random() < 0.38].map((on) => on ? (Math.random() < 0.8 ? 0 : 1) : -1));
+    cols.push({ h, h0: h, wins, style: Math.random() * 4 | 0, ant: Math.random() < 0.35, shake: 0 });
+  }
+}
+function startLevel(L) {
+  level = L; levelScore = 0;
+  buildCity(L);
+  ufo = { x: -20, y: START_Y, speed: Math.min(165, 92 + L * 9), crashed: false, landT: 0, tilt: 0 };
+  bomb = null; debris = []; flashes = []; dust = []; floatTxt = [];
+  msg = { text: "LEVEL " + L, sub: L === 1 ? "clear a path, then land" : "taller skyline · faster descent", t: 0 };
+  setState("play"); setHum(true); updateHud();
+}
+function newGame() { score = 0; hideCard(); startLevel(1); }
+function setState(s) { state = s; stateT = 0; }
+
+// ---------- gameplay ----------
+function dropBomb() {
+  if (state !== "play" || bomb || ufo.y + 6 >= GROUND - 1) return;
+  if (ufo.x < 0 || ufo.x > W) return;
+  bomb = { x: ufo.x, y: ufo.y + 6, vy: 40, trail: [] }; sfx.drop();
+}
+function colAt(x) { const i = Math.floor(x / CW); return i >= 0 && i < COLS ? i : -1; }
+const topY = (c) => GROUND - c.h * FH;
+
+function update(dt) {
+  clock += dt; stateT += dt;
+  for (const d of debris) { d.vy += 260 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.r += d.vr * dt; if (d.y > GROUND - 1) { d.y = GROUND - 1; d.vy *= -0.25; d.vx *= 0.6; } d.life -= dt; }
+  debris = debris.filter((d) => d.life > 0);
+  for (const f of flashes) f.t += dt; flashes = flashes.filter((f) => f.t < f.dur);
+  for (const p of dust) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy -= 6 * dt; p.life -= dt; } dust = dust.filter((p) => p.life > 0);
+  for (const f of floatTxt) { f.t += dt; } floatTxt = floatTxt.filter((f) => f.t < 1.2);
+  if (cols) for (const c of cols) if (c) c.shake = Math.max(0, c.shake - dt);
+  if (msg) { msg.t += dt; if (msg.t > 2.6) msg = null; }
+  if (state === "landing") {
+    ufo.y = Math.min(GROUND - 7, ufo.y + 18 * dt); ufo.x += (ufo.tx - ufo.x) * Math.min(1, dt * 2); ufo.speed *= 0.97;
+    if (stateT > 2.2) levelDone();
+    return;
+  }
+  if (state === "crashing") { if (stateT > 1.8) gameOver(); return; }
+  if (state !== "play") return;
+
+  // flight: left to right, wrap, sink one step per pass
+  ufo.x += ufo.speed * dt;
+  ufo.tilt = Math.sin(clock * 2.2) * 0.04;
+  if (ufo.x > W + 20) {
+    ufo.x = -20;
+    if (ufo.y + STEP + 6 >= GROUND - 2) {               // close to the ground: try to land
+      ufo.y = GROUND - 8; ufo.tx = W * 0.5; landingCheck(); return;
+    }
+    ufo.y += STEP; sfx.pass();
+  }
+  // collision with a building
+  const L = ufo.x - 12, R = ufo.x + 12, B = ufo.y + 5;
+  for (let i = Math.max(0, colAt(L)); i <= Math.min(COLS - 1, colAt(R)); i++) {
+    const c = cols[i]; if (!c || c.h <= 0) continue;
+    const bx0 = i * CW + 2, bx1 = (i + 1) * CW - 2;
+    if (R > bx0 && L < bx1 && B > topY(c) + 1) { crash(i); return; }
+  }
+  // bomb: falls straight down, eats a few floors off whatever it hits
+  if (bomb) {
+    bomb.vy = Math.min(260, bomb.vy + 340 * dt); bomb.y += bomb.vy * dt;
+    bomb.trail.push([bomb.x, bomb.y]); if (bomb.trail.length > 10) bomb.trail.shift();
+    const i = colAt(bomb.x), c = i >= 0 ? cols[i] : null;
+    const bx0 = i * CW + 2, bx1 = (i + 1) * CW - 2;
+    if (c && c.h > 0 && bomb.x > bx0 - 1 && bomb.x < bx1 + 1 && bomb.y >= topY(c)) {
+      const n = Math.min(c.h, 2 + (Math.random() * 3 | 0));
+      explode(i, c, n); bomb = null;
+    } else if (bomb.y >= GROUND - 2) {
+      flashes.push({ x: bomb.x, y: GROUND - 2, t: 0, dur: 0.35, r: 10 }); sfx.thud(); puff(bomb.x, GROUND - 2, 6); bomb = null;
+    }
+  }
+}
+function explode(i, c, n) {
+  const yTop = topY(c), cx = i * CW + CW / 2;
+  flashes.push({ x: cx, y: yTop + 4, t: 0, dur: 0.5, r: 18 + n * 4 });
+  for (let k = 0; k < 10 + n * 5; k++) debris.push({ x: cx + rnd(-7, 7), y: yTop + rnd(0, n * FH), vx: rnd(-60, 60), vy: rnd(-110, -20), r: Math.random() * 6, vr: rnd(-8, 8), s: rnd(1.2, 3), life: rnd(0.8, 1.6), c: Math.random() < 0.3 ? "#ffb86b" : "#3a4066" });
+  puff(cx, yTop + n * FH * 0.5, 8 + n * 2);
+  c.h -= n; c.shake = 0.3;
+  const pts = n * 5 * level; score += pts; levelScore += pts;
+  floatTxt.push({ x: cx, y: yTop - 6, text: "+" + pts, t: 0 });
+  sfx.boom(n); updateHud();
+}
+function puff(x, y, n) { for (let k = 0; k < n; k++) dust.push({ x: x + rnd(-6, 6), y: y + rnd(-4, 4), vx: rnd(-14, 14), vy: rnd(-16, -4), r: rnd(3, 7), life: rnd(1, 2.2), max: 2.2 }); }
+function landingCheck() {
+  // lands only if the strip it glides over is clear
+  setState("landing"); setHum(false); sfx.land();
+  const bonus = 150 * level; score += bonus; levelScore += bonus;
+  floatTxt.push({ x: W / 2, y: GROUND - 30, text: "SAFE LANDING +" + bonus, t: 0, big: true });
+  updateHud();
+}
+function crash(i) {
+  ufo.crashed = true; setState("crashing"); setHum(false); sfx.crash(); bomb = null;
+  flashes.push({ x: ufo.x, y: ufo.y, t: 0, dur: 0.9, r: 45 });
+  for (let k = 0; k < 40; k++) debris.push({ x: ufo.x + rnd(-10, 10), y: ufo.y + rnd(-4, 4), vx: rnd(-90, 90), vy: rnd(-140, 20), r: 0, vr: rnd(-10, 10), s: rnd(1, 3), life: rnd(1, 2), c: Math.random() < 0.5 ? "#8fd3ff" : "#ffb86b" });
+  puff(ufo.x, ufo.y, 18);
+  if (cols[i]) cols[i].shake = 0.5;
+}
+function levelDone() {
+  if (score > best) { best = score; store.set("nl.best", best); }
+  if (level > bestLevel) { bestLevel = level; store.set("nl.bestLevel", bestLevel); }
+  setState("between");
+  const floorsLeft = cols.reduce((a, c) => a + (c ? c.h : 0), 0);
+  showCard(`<div class="kicker">Level ${level} complete</div><h1>Touch<span>down</span></h1>
+    <div class="rows"><span>This level</span><b>${levelScore}</b><span>Floors still standing</span><b>${floorsLeft}</b><span>Total score</span><b>${score}</b></div>
+    <p>Next: a taller skyline and a faster descent.</p>
+    <span class="go">${isTouch ? "Tap" : "Space"} for level ${level + 1}</span>`);
+  updateHud();
+}
+function gameOver() {
+  const nb = score > best; if (nb) { best = score; store.set("nl.best", best); }
+  if (level - 1 > bestLevel) { bestLevel = level - 1; store.set("nl.bestLevel", bestLevel); }
+  setState("over");
+  showCard(`<div class="kicker">Signal lost</div><h1>Crashed on <span>level ${level}</span></h1>
+    <div class="big">${score}</div>
+    <div class="rows"><span>Best score</span><b>${best}</b><span>Highest level cleared</span><b>${bestLevel}</b></div>
+    <p>${nb ? "A new record." : "The city is still standing. For now."}</p>
+    <span class="go">${isTouch ? "Tap" : "Space"} to try again</span>`);
+  updateHud();
+}
+
+// ---------- HUD & cards ----------
+const ui = { level: $("#level"), score: $("#score"), best: $("#best"), ov: $("#ov"), card: $("#card") };
+function updateHud() { ui.level.textContent = level; ui.score.textContent = score.toLocaleString(); ui.best.textContent = "BEST " + best.toLocaleString(); }
+function showCard(h) { ui.card.innerHTML = h; ui.ov.classList.add("show"); }
+function hideCard() { ui.ov.classList.remove("show"); }
+function showTitle() {
+  setState("title");
+  showCard(`<div class="kicker">A night over the city</div><h1>Night <span>Landing</span></h1>
+    <p>Your saucer crosses the skyline and sinks a little lower every pass.</p>
+    <p>${isTouch ? "Tap" : "Press <kbd>Space</kbd>"} to drop a bomb. Only one can fall at a time.</p>
+    <p>Bring the towers down before you reach them, and land.</p>
+    <span class="go">${isTouch ? "Tap" : "Space"} to begin</span>`);
+}
+
+// ---------- render ----------
+const wx = (x) => OX + x * S, wy = (y) => OY + y * S;
+let stars = [], farCity = [], midCity = [];
+function makeSkyline() {
+  stars = []; for (let i = 0; i < 120; i++) stars.push({ x: Math.random() * VW, y: Math.random() * VH * 0.7, r: Math.random() < 0.9 ? 0.7 : 1.3, tw: Math.random() * 6 });
+  farCity = []; let x = -20; while (x < VW + 40) { const w = rnd(18, 46); farCity.push({ x, w, h: rnd(30, 120) }); x += w + rnd(2, 10); }
+  midCity = []; x = -20; while (x < VW + 40) { const w = rnd(24, 60); midCity.push({ x, w, h: rnd(40, 170), lit: Math.random() }); x += w + rnd(4, 16); }
+}
+function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  // deep night gradient with a hazy horizon
+  const g = ctx.createLinearGradient(0, 0, 0, VH);
+  g.addColorStop(0, "#07081a"); g.addColorStop(0.55, "#141634"); g.addColorStop(0.85, "#2a2350"); g.addColorStop(1, "#1a1530");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  for (const s of stars) { ctx.globalAlpha = 0.35 + 0.35 * Math.sin(clock * 1.3 + s.tw); ctx.fillStyle = "#cfd6ff"; ctx.fillRect(s.x, s.y, s.r, s.r); }
+  ctx.globalAlpha = 1;
+  // moon behind thin cloud
+  const mx = VW * 0.78, my = VH * 0.16, mr = Math.min(VW, VH) * 0.06;
+  const mg = ctx.createRadialGradient(mx, my, mr * 0.2, mx, my, mr * 4); mg.addColorStop(0, "rgba(220,225,255,.22)"); mg.addColorStop(1, "rgba(220,225,255,0)");
+  ctx.fillStyle = mg; ctx.fillRect(mx - mr * 4, my - mr * 4, mr * 8, mr * 8);
+  { const mi = moonImg(mr); ctx.drawImage(mi, mx - mr - 2, my - mr - 2, (Math.round(mr) + 2) * 2, (Math.round(mr) + 2) * 2); }
+  // distant city layers
+  const groundY = wy(GROUND);
+  ctx.fillStyle = "#1c1b3d"; for (const b of farCity) ctx.fillRect(b.x, groundY - b.h * 0.8, b.w, b.h * 0.8 + 4);
+  ctx.fillStyle = "#16163a"; for (const b of midCity) { ctx.fillRect(b.x, groundY - b.h * 0.55, b.w, b.h * 0.55 + 4); }
+  // drifting fog band
+  const fog = ctx.createLinearGradient(0, groundY - 120, 0, groundY);
+  fog.addColorStop(0, "rgba(120,110,190,0)"); fog.addColorStop(1, "rgba(120,110,190,.18)");
+  ctx.fillStyle = fog; ctx.fillRect(0, groundY - 120, VW, 120);
+
+  if (!cols) return;
+  // the playfield's edges fade softly
+  // buildings
+  for (let i = 0; i < COLS; i++) {
+    const c = cols[i]; if (!c || c.h <= 0) continue;
+    const sh = c.shake > 0 ? Math.sin(clock * 80) * c.shake * 2 : 0;
+    const x0 = wx(i * CW + 2) + sh, w = (CW - 4) * S, top = wy(topY(c)), h = groundY - top;
+    const bg = ctx.createLinearGradient(0, top, 0, groundY); bg.addColorStop(0, "#2a2f55"); bg.addColorStop(1, "#1b1e3d");
+    ctx.fillStyle = bg; ctx.fillRect(x0, top, w, h);
+    ctx.fillStyle = "rgba(143,211,255,.10)"; ctx.fillRect(x0, top, 1.2 * S, h);           // rim light
+    ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(x0 + w - 1.5 * S, top, 1.5 * S, h);
+    // windows (lit warm/cool, some flicker)
+    for (let f = 0; f < c.h; f++) {
+      const row = c.wins[f % c.wins.length], fy = groundY - (f + 1) * FH * S + 2.5 * S;
+      for (let k = 0; k < 3; k++) {
+        const v = row[k]; const wxp = x0 + (2.3 + k * 4.6) * S;
+        if (v < 0) { ctx.fillStyle = "rgba(10,12,30,.55)"; }
+        else {
+          const flick = (Math.sin(clock * 3 + i * 7 + f * 3 + k) > 0.985) ? 0.4 : 1;
+          ctx.fillStyle = v === 0 ? `rgba(255,184,107,${0.75 * flick})` : `rgba(143,211,255,${0.7 * flick})`;
+        }
+        ctx.fillRect(wxp, fy, 2.4 * S, 3.6 * S);
+      }
+    }
+    ctx.fillStyle = "#353b6a"; ctx.fillRect(x0 - 0.5 * S, top, w + 1 * S, 1.4 * S);         // roof ledge
+    if (c.ant && c.h === c.h0) {
+      ctx.fillStyle = "#353b6a"; ctx.fillRect(x0 + w / 2 - 0.5 * S, top - 6 * S, 1 * S, 6 * S);
+      if (Math.floor(clock * 1.2 + i) % 2) { ctx.fillStyle = "#ff5a6e"; ctx.beginPath(); ctx.arc(x0 + w / 2, top - 6.5 * S, 1.3 * S, 0, 7); ctx.fill();
+        const rg = ctx.createRadialGradient(x0 + w / 2, top - 6.5 * S, 0, x0 + w / 2, top - 6.5 * S, 7 * S); rg.addColorStop(0, "rgba(255,90,110,.35)"); rg.addColorStop(1, "rgba(255,90,110,0)"); ctx.fillStyle = rg; ctx.fillRect(x0 + w / 2 - 7 * S, top - 13 * S, 14 * S, 14 * S); }
+    }
+    if (c.h < c.h0) { ctx.fillStyle = "#1b1e3d"; for (let k = 0; k < 4; k++) ctx.fillRect(x0 + k * w / 4, top - ((i * 7 + k * 3) % 3) * S, w / 4 + 0.5, 2 * S); } // jagged broken top
+  }
+  // ground
+  const gg = ctx.createLinearGradient(0, groundY, 0, VH); gg.addColorStop(0, "#151733"); gg.addColorStop(1, "#0a0b1c");
+  ctx.fillStyle = gg; ctx.fillRect(0, groundY, VW, VH - groundY);
+  ctx.fillStyle = "rgba(143,211,255,.12)"; ctx.fillRect(0, groundY, VW, 1);
+  // landing strip lights
+  for (let k = 0; k < 9; k++) { const lx = wx(W * 0.3 + k * W * 0.05); ctx.fillStyle = (Math.floor(clock * 4) - k) % 9 === 0 ? "rgba(143,211,255,.9)" : "rgba(143,211,255,.25)"; ctx.fillRect(lx - 1, groundY + 2, 2, 2); }
+
+  // dust & smoke
+  for (const p of dust) { ctx.globalAlpha = clamp(p.life / p.max, 0, 1) * 0.35; ctx.fillStyle = "#6f6a9a"; ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y), p.r * S * (1.6 - p.life / p.max * 0.6), 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  // explosion glows
+  for (const f of flashes) {
+    const k = f.t / f.dur, r = f.r * S * (0.5 + k * 0.8);
+    const fg = ctx.createRadialGradient(wx(f.x), wy(f.y), 0, wx(f.x), wy(f.y), r);
+    fg.addColorStop(0, `rgba(255,220,170,${0.9 * (1 - k)})`); fg.addColorStop(0.4, `rgba(255,140,80,${0.5 * (1 - k)})`); fg.addColorStop(1, "rgba(255,120,60,0)");
+    ctx.fillStyle = fg; ctx.fillRect(wx(f.x) - r, wy(f.y) - r, r * 2, r * 2);
+  }
+  for (const d of debris) { ctx.globalAlpha = clamp(d.life, 0, 1); ctx.fillStyle = d.c; ctx.save(); ctx.translate(wx(d.x), wy(d.y)); ctx.rotate(d.r); ctx.fillRect(-d.s * S / 2, -d.s * S / 2, d.s * S, d.s * S); ctx.restore(); }
+  ctx.globalAlpha = 1;
+
+  // bomb with a faint glowing trail
+  if (bomb) {
+    for (let k = 0; k < bomb.trail.length; k++) { const [tx, ty] = bomb.trail[k]; ctx.globalAlpha = k / bomb.trail.length * 0.4; ctx.fillStyle = "#ffb86b"; ctx.beginPath(); ctx.arc(wx(tx), wy(ty), 1.2 * S, 0, 7); ctx.fill(); }
+    ctx.globalAlpha = 1; ctx.fillStyle = "#ffe0b8"; ctx.beginPath(); ctx.arc(wx(bomb.x), wy(bomb.y), 1.8 * S, 0, 7); ctx.fill();
+    const bg = ctx.createRadialGradient(wx(bomb.x), wy(bomb.y), 0, wx(bomb.x), wy(bomb.y), 6 * S); bg.addColorStop(0, "rgba(255,184,107,.5)"); bg.addColorStop(1, "rgba(255,184,107,0)"); ctx.fillStyle = bg; ctx.fillRect(wx(bomb.x) - 6 * S, wy(bomb.y) - 6 * S, 12 * S, 12 * S);
+  }
+  // UFO
+  if (ufo && !ufo.crashed && (state === "play" || state === "landing" || state === "between" || state === "title")) drawUFO(ufo.x, ufo.y + Math.sin(clock * 3) * 0.8, ufo.tilt);
+
+  // soft fade at the playfield edges where the saucer wraps
+  const ef = 30 * S;
+  let eg = ctx.createLinearGradient(wx(0), 0, wx(0) + ef, 0); eg.addColorStop(0, "rgba(11,13,26,.55)"); eg.addColorStop(1, "rgba(11,13,26,0)"); ctx.fillStyle = eg; ctx.fillRect(wx(0), 0, ef, groundY);
+  eg = ctx.createLinearGradient(wx(W), 0, wx(W) - ef, 0); eg.addColorStop(0, "rgba(11,13,26,.55)"); eg.addColorStop(1, "rgba(11,13,26,0)"); ctx.fillStyle = eg; ctx.fillRect(wx(W) - ef, 0, ef, groundY);
+  if (OX > 2) { ctx.fillStyle = "rgba(11,13,26,.55)"; ctx.fillRect(0, 0, OX, groundY); ctx.fillRect(OX + W * S, 0, VW - OX - W * S, groundY); }
+
+  // floating text + level message
+  ctx.textAlign = "center";
+  for (const f of floatTxt) { ctx.globalAlpha = 1 - f.t / 1.2; ctx.fillStyle = f.big ? "#8fd3ff" : "#ffd3a0"; ctx.font = `700 ${(f.big ? 12 : 9) * S}px system-ui`; ctx.fillText(f.text, wx(f.x), wy(f.y - f.t * 14)); }
+  ctx.globalAlpha = 1;
+  if (msg && state === "play") {
+    const a = msg.t < 0.5 ? msg.t / 0.5 : msg.t > 2 ? Math.max(0, (2.6 - msg.t) / 0.6) : 1;
+    ctx.globalAlpha = a; ctx.fillStyle = "#e6e9ff"; ctx.font = `800 ${18 * S}px system-ui`; ctx.fillText(msg.text, wx(W / 2), wy(H * 0.42));
+    ctx.fillStyle = "#8a90b8"; ctx.font = `600 ${8 * S}px system-ui`; ctx.fillText(msg.sub, wx(W / 2), wy(H * 0.42) + 13 * S); ctx.globalAlpha = 1;
+  }
+  ctx.textAlign = "start";
+}
+let moonC = null, moonR = 0;
+function moonImg(r) { // a true crescent, cut out on its own little canvas
+  if (moonC && moonR === Math.round(r)) return moonC;
+  moonR = Math.round(r); moonC = document.createElement("canvas"); moonC.width = moonC.height = (moonR + 2) * 2 * DPR;
+  moonC.style.width = moonC.style.height = (moonR + 2) * 2 + "px";
+  const m = moonC.getContext("2d"); m.scale(DPR, DPR);
+  m.fillStyle = "#e9ecff"; m.beginPath(); m.arc(moonR + 2, moonR + 2, moonR, 0, 7); m.fill();
+  m.globalCompositeOperation = "destination-out"; m.beginPath(); m.arc(moonR + 2 + moonR * 0.45, moonR + 2 - moonR * 0.2, moonR * 0.95, 0, 7); m.fill();
+  return moonC;
+}
+function drawUFO(x, y, tilt) {
+  const X = wx(x), Y = wy(y);
+  ctx.save(); ctx.translate(X, Y); ctx.rotate(tilt);
+  // faint scanning beam
+  const beam = ctx.createLinearGradient(0, 4 * S, 0, 40 * S); beam.addColorStop(0, "rgba(143,211,255,.20)"); beam.addColorStop(1, "rgba(143,211,255,0)");
+  ctx.fillStyle = beam; ctx.beginPath(); ctx.moveTo(-5 * S, 4 * S); ctx.lineTo(5 * S, 4 * S); ctx.lineTo(13 * S, 40 * S); ctx.lineTo(-13 * S, 40 * S); ctx.closePath(); ctx.fill();
+  // glow
+  const gl = ctx.createRadialGradient(0, 0, 0, 0, 0, 26 * S); gl.addColorStop(0, "rgba(143,211,255,.30)"); gl.addColorStop(1, "rgba(143,211,255,0)");
+  ctx.fillStyle = gl; ctx.fillRect(-26 * S, -26 * S, 52 * S, 52 * S);
+  // hull
+  const hull = ctx.createLinearGradient(0, -2 * S, 0, 5 * S); hull.addColorStop(0, "#c9d3f5"); hull.addColorStop(1, "#5a6496");
+  ctx.fillStyle = hull; ctx.beginPath(); ctx.ellipse(0, 1.5 * S, 13 * S, 3.6 * S, 0, 0, 7); ctx.fill();
+  // dome
+  const dome = ctx.createLinearGradient(0, -6 * S, 0, 0); dome.addColorStop(0, "rgba(220,240,255,.95)"); dome.addColorStop(1, "rgba(143,211,255,.55)");
+  ctx.fillStyle = dome; ctx.beginPath(); ctx.ellipse(0, -0.5 * S, 5.5 * S, 4.6 * S, 0, Math.PI, 0); ctx.fill();
+  // running lights
+  for (let k = -2; k <= 2; k++) { const on = (Math.floor(clock * 6) + k + 5) % 5 === 0; ctx.fillStyle = on ? "#ffffff" : "rgba(143,211,255,.7)"; ctx.beginPath(); ctx.arc(k * 4.6 * S, 2.2 * S, 0.9 * S, 0, 7); ctx.fill(); }
+  ctx.restore();
+}
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+  update(dt); render(); requestAnimationFrame(frame);
+}
+resize(); buildCity(2); ufo = { x: W * 0.35, y: START_Y + 30, speed: 0, tilt: 0 }; debris = []; flashes = []; dust = []; floatTxt = []; msg = null;
+updateHud(); showTitle(); requestAnimationFrame(frame);
+
+// ---------- input: one button ----------
+function act() {
+  if (state === "title" || (state === "over" && stateT > 0.6)) { sfx.ok(); newGame(); return; }
+  if (state === "between" && stateT > 0.4) { hideCard(); startLevel(level + 1); return; }
+  if (state === "paused") { setState("play"); hideCard(); setHum(true); return; }
+  dropBomb();
+}
+function pause() { if (state === "play") { setState("paused"); setHum(false); showCard(`<div class="kicker">Paused</div><h1>Hovering…</h1><span class="go">${isTouch ? "Tap" : "Space"} to continue</span>`); } }
+addEventListener("keydown", (e) => {
+  if (["Space", "Enter", "ArrowDown"].includes(e.code)) { e.preventDefault(); if (!e.repeat) act(); }
+  if (e.code === "KeyM") toggleSnd();
+  if (e.code === "KeyP" || e.code === "Escape") { if (state === "paused") act(); else pause(); }
+});
+addEventListener("pointerdown", (e) => { if (e.target.closest(".btns")) return; e.preventDefault(); act(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+
+if (location.search.includes("debug")) window.__nl = {
+  get: () => ({ state, level, score, x: Math.round(ufo.x), y: Math.round(ufo.y), bomb: !!bomb, floors: cols.reduce((a, c) => a + (c ? c.h : 0), 0) }),
+  cols: () => cols.map((c) => (c ? c.h : 0)), drop: dropBomb, act, ufo: () => ufo, setSpeed: (v) => { ufo.speed = v; },
+};
+})();
+</script>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

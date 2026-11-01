@@ -17,6 +17,7 @@ Every game is a single self-contained HTML file. No installs, no build step, no 
 | [Sky Stacker](https://sakhadib.github.io/games/sky-stacker/) | 2D arcade | Time the swinging crane and drop each floor. Chain perfect drops, fight the wind, and fill your tower with tiny residents. |
 | [Roll Rush](https://sakhadib.github.io/games/roll-rush/) | 2D arcade | The platforms rise and the ceiling is spikes. Roll down, chain freefall combos, grab power-ups, and dive through six zones. |
 | [Balloon Bow](https://sakhadib.github.io/games/balloon-bow/) | 2D archery | Old-school archery in a classic desktop window. Aim, charge, run for arrow packs, and don't let 10 balloons escape. |
+| [Night Landing](https://sakhadib.github.io/games/night-landing/) | 2D arcade | Your UFO sinks lower every pass over a dark city. Drop one bomb at a time, clear the skyline, and land. |
 
 ## How it works
 
