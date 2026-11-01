@@ -16,6 +16,7 @@ Every game is a single self-contained HTML file. No installs, no build step, no 
 | [Pocket Bounce](https://sakhadib.github.io/games/pocket-bounce/) | 2D platformer | An endless bouncing-ball runner. The road builds itself as you go; shrink to squeeze through tunnels, grow to float and smash walls. |
 | [Sky Stacker](https://sakhadib.github.io/games/sky-stacker/) | 2D arcade | Time the swinging crane and drop each floor. Chain perfect drops, fight the wind, and fill your tower with tiny residents. |
 | [Roll Rush](https://sakhadib.github.io/games/roll-rush/) | 2D arcade | The platforms rise and the ceiling is spikes. Roll down, chain freefall combos, grab power-ups, and dive through six zones. |
+| [Balloon Bow](https://sakhadib.github.io/games/balloon-bow/) | 2D archery | Old-school archery in a classic desktop window. Aim, charge, run for arrow packs, and don't let 10 balloons escape. |
 
 ## How it works
 

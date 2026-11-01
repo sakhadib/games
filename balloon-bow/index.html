@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Balloon Bow · old-school archery balloon shooter | The Oven</title>
+<meta name="description" content="A free archery game in a classic desktop window. Aim, charge and loose arrows in real projectile arcs, run to grab arrow packs, and don't let 10 balloons escape. Endless, no ads, works on mobile.">
+<meta name="keywords" content="bow and arrow game, balloon shooting game, archery game, windows xp game, retro pc game, projectile game, browser game, no ads">
+<meta name="author" content="Sakhawat Adib">
+<link rel="canonical" href="https://sakhadib.github.io/games/balloon-bow/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Oven">
+<meta property="og:title" content="Balloon Bow · The Oven">
+<meta property="og:description" content="Old-school archery: aim, charge, and pop balloons before 10 get away. Endless, no ads.">
+<meta property="og:url" content="https://sakhadib.github.io/games/balloon-bow/">
+<meta property="og:image" content="https://sakhadib.github.io/games/assets/shots/balloon-bow.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sakhadib.github.io/games/assets/shots/balloon-bow.jpg">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Balloon Bow","url":"https://sakhadib.github.io/games/balloon-bow/","description":"An endless archery game in a classic desktop window. Aim, charge and loose arrows in real projectile arcs, grab arrow packs, and don't let 10 balloons escape.","image":"https://sakhadib.github.io/games/assets/shots/balloon-bow.jpg","genre":["Arcade","Shooter"],"gamePlatform":["Web browser","Mobile","Desktop"],"applicationCategory":"Game","operatingSystem":"Any","playMode":"SinglePlayer","isAccessibleForFree":true,"inLanguage":"en","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Sakhawat Adib","url":"https://portfolio.sakhawatadib.com"},"isPartOf":{"@type":"WebSite","name":"The Oven","url":"https://sakhadib.github.io/games/"}}</script>
+<meta name="theme-color" content="#008080">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='%23c0c0c0'/><rect x='1' y='1' width='14' height='3' fill='%23000080'/><rect x='1' y='4' width='14' height='11' fill='%2387c4ee'/><rect x='9' y='6' width='4' height='5' fill='%23e02020'/><rect x='10' y='11' width='1' height='3' fill='%23333'/><rect x='3' y='9' width='5' height='1' fill='%23553311'/></svg>">
+<style>
+  :root { --face: #c0c0c0; --hi: #ffffff; --lt: #dfdfdf; --sh: #808080; --dk: #0a0a0a; --title: #000080; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { background: #008080; font-family: Tahoma, "MS Sans Serif", "Segoe UI", Arial, sans-serif; font-size: 12px; color: #000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100dvh; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .bevel { box-shadow: inset -1px -1px var(--dk), inset 1px 1px var(--hi), inset -2px -2px var(--sh), inset 2px 2px var(--lt); }
+  .sunk { box-shadow: inset -1px -1px var(--hi), inset 1px 1px var(--sh), inset -2px -2px var(--lt), inset 2px 2px var(--dk); }
+  .win { background: var(--face); padding: 3px; position: relative; }
+  .titlebar { height: 20px; background: linear-gradient(90deg, #000080, #1084d0); color: #fff; font-weight: bold; display: flex; align-items: center; justify-content: space-between; padding: 0 3px 0 4px; }
+  .titlebar .t { display: flex; align-items: center; gap: 5px; white-space: nowrap; overflow: hidden; }
+  .titlebar .ico { width: 14px; height: 14px; background: #c0c0c0; position: relative; flex: none; }
+  .titlebar .ico::before { content: ""; position: absolute; left: 7px; top: 2px; width: 5px; height: 6px; background: #e02020; border-radius: 50%; }
+  .titlebar .ico::after { content: ""; position: absolute; left: 1px; top: 9px; width: 9px; height: 2px; background: #5a3a1a; }
+  .tb { display: flex; gap: 2px; }
+  .tb button, .tb a { width: 16px; height: 14px; background: var(--face); border: 0; padding: 0; font: bold 10px/14px Tahoma, sans-serif; color: #000; text-align: center; text-decoration: none; cursor: pointer; }
+  .tb a { margin-left: 2px; }
+  .menubar { display: flex; height: 20px; align-items: center; padding: 0 2px; position: relative; z-index: 5; }
+  .menu { position: relative; }
+  .menu > span { padding: 2px 7px; cursor: default; display: inline-block; }
+  .menu > span u { text-decoration: underline; }
+  .menu.open > span { background: var(--title); color: #fff; }
+  .drop { position: absolute; left: 0; top: 19px; background: var(--face); min-width: 170px; padding: 2px; display: none; }
+  .menu.open .drop { display: block; }
+  .drop div { padding: 3px 18px 3px 20px; display: flex; justify-content: space-between; gap: 20px; white-space: nowrap; cursor: default; }
+  .drop div:hover { background: var(--title); color: #fff; }
+  .drop hr { border: 0; border-top: 1px solid var(--sh); border-bottom: 1px solid var(--hi); margin: 3px 1px; }
+  .client { padding: 2px; background: var(--face); }
+  .screen { position: relative; display: block; }
+  canvas { display: block; image-rendering: pixelated; image-rendering: crisp-edges; width: 100%; height: 100%; }
+  .status { display: flex; gap: 2px; margin-top: 2px; }
+  .cell { padding: 2px 6px; height: 20px; white-space: nowrap; overflow: hidden; display: flex; align-items: center; gap: 4px; }
+  .cell.grow { flex: 1; min-width: 0; }
+  .esc { display: inline-flex; gap: 1px; }
+  .esc i { width: 6px; height: 8px; border-radius: 50% 50% 45% 45%; background: #fff; box-shadow: inset 0 0 0 1px #808080; display: inline-block; }
+  .esc i.on { background: #e02020; box-shadow: none; }
+
+  /* classic dialog */
+  .dlg-wrap { position: absolute; inset: 0; display: none; place-items: center; z-index: 20; }
+  .dlg-wrap.show { display: grid; }
+  .dlg { background: var(--face); padding: 3px; width: min(330px, 92%); }
+  .dlg .body { padding: 14px 14px 10px; display: flex; gap: 12px; align-items: flex-start; line-height: 1.45; }
+  .dlg .icon { width: 32px; height: 32px; flex: none; border-radius: 50%; background: #1060d0; color: #fff; font: bold 20px/32px Georgia, serif; text-align: center; }
+  .dlg .icon.warn { background: #e8c000; color: #000; border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); line-height: 40px; font-size: 18px; }
+  .dlg .body p { margin: 0 0 6px; }
+  .dlg .body b.big { font-size: 20px; }
+  .dlg .btns { display: flex; justify-content: center; gap: 8px; padding: 2px 0 10px; }
+  .btn { background: var(--face); border: 0; min-width: 76px; height: 24px; font: 12px Tahoma, sans-serif; cursor: pointer; padding: 0 10px; }
+  .btn:active { box-shadow: inset 1px 1px var(--dk), inset -1px -1px var(--hi), inset 2px 2px var(--sh), inset -2px -2px var(--lt); }
+  .btn.def { outline: 1px solid #000; outline-offset: -1px; }
+  kbd { font: 11px Tahoma, sans-serif; background: #fff; padding: 0 3px; box-shadow: inset -1px -1px var(--sh), inset 1px 1px var(--lt); }
+
+  /* touch controls panel */
+  #pad { display: none; background: var(--face); padding: 8px; margin-top: 6px; gap: 10px; grid-template-columns: 1fr 1.25fr; width: 100%; }
+  body.touch #pad { display: grid; }
+  .ctl { position: relative; touch-action: none; display: grid; place-items: center; text-align: center; color: #404040; font-size: 11px; }
+  #stick .knob { width: 44%; aspect-ratio: 1; background: var(--face); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+  #aim.on { background: #b0b0b0; }
+  .lbl { position: absolute; top: 6px; left: 0; right: 0; font-weight: bold; color: #303030; }
+</style>
+</head>
+<body>
+<div class="win bevel" id="win">
+  <div class="titlebar"><div class="t"><span class="ico"></span>Balloon Bow</div>
+    <div class="tb"><button class="bevel" title="Pause" id="tbMin">_</button><button class="bevel" title="New game" id="tbMax">□</button><a class="bevel" href="../" title="Close (back to The Oven)">×</a></div></div>
+  <div class="menubar">
+    <div class="menu" data-m="game"><span><u>G</u>ame</span><div class="drop bevel">
+      <div data-a="new">New Game<span>F2</span></div><div data-a="pause">Pause<span>P</span></div><hr><div data-a="exit">Exit</div></div></div>
+    <div class="menu" data-m="opt"><span><u>O</u>ptions</span><div class="drop bevel">
+      <div data-a="sound"><span id="sndLbl">✓ Sound</span><span>M</span></div></div></div>
+    <div class="menu" data-m="help"><span><u>H</u>elp</span><div class="drop bevel">
+      <div data-a="how">How to Play</div><hr><div data-a="about">About Balloon Bow…</div></div></div>
+  </div>
+  <div class="client sunk"><div class="screen" id="screen"><canvas id="c" width="320" height="200"></canvas></div></div>
+  <div class="status">
+    <div class="cell sunk" id="sArrows">Arrows: 15</div>
+    <div class="cell sunk">Escaped: <span class="esc" id="sEsc"></span></div>
+    <div class="cell sunk" id="sScore">Score: 0</div>
+    <div class="cell sunk grow" id="sMsg">Ready</div>
+  </div>
+  <div class="dlg-wrap" id="dlgWrap"><div class="dlg bevel"><div class="titlebar"><div class="t" id="dlgTitle">Balloon Bow</div><div class="tb"><button class="bevel" id="dlgX">×</button></div></div><div id="dlgBody"></div></div></div>
+</div>
+<div id="pad">
+  <div class="ctl bevel" id="stick"><span class="lbl">MOVE</span><div class="knob bevel"></div></div>
+  <div class="ctl bevel" id="aim"><span class="lbl">HOLD = POWER · SLIDE ↕ = ANGLE</span><div id="aimInfo" style="margin-top:14px;font-size:12px">45°</div></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const isTouch = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+if (isTouch) document.body.classList.add("touch");
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+// ---------- window sizing: 320x200 game screen, scaled crisp ----------
+const W = 320, H = 200;
+const cv = $("#c"), g = cv.getContext("2d"); g.imageSmoothingEnabled = false;
+const screenEl = $("#screen"), win = $("#win"), pad = $("#pad");
+function fit() {
+  const chromeH = 20 + 20 + 24 + 14, chromeW = 14;
+  const padH = isTouch ? Math.min(220, innerHeight * 0.34) : 0;
+  const aw = Math.min(innerWidth - 8, 1100) - chromeW, ah = innerHeight - chromeH - padH - (isTouch ? 20 : 24);
+  let s = Math.min(aw / W, ah / H); if (s >= 2) s = Math.floor(s * 2) / 2;
+  s = Math.max(0.8, s);
+  screenEl.style.width = Math.round(W * s) + "px"; screenEl.style.height = Math.round(H * s) + "px";
+  pad.style.width = win.offsetWidth + "px"; pad.style.height = padH + "px";
+}
+addEventListener("resize", fit);
+
+// ---------- PC-speaker style sound ----------
+let AC = null, muted = store.get("bb.muted", false);
+function beep(f, dur, delay = 0, vol = 0.05, type = "square", slide = 0) {
+  if (muted) return;
+  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  if (AC.state === "suspended") AC.resume();
+  const t = AC.currentTime + delay, o = AC.createOscillator(), gn = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, f * slide), t + dur);
+  gn.gain.setValueAtTime(vol, t); gn.gain.setValueAtTime(0, t + dur);
+  o.connect(gn).connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const sfx = {
+  twang(p) { beep(220 + p * 260, 0.12, 0, 0.05, "triangle", 0.5); },
+  pop() { beep(900, 0.03, 0, 0.05); beep(300, 0.05, 0.03, 0.05); },
+  multi(n) { for (let i = 0; i < n; i++) beep(660 * Math.pow(1.26, i), 0.06, i * 0.07, 0.05); },
+  pick() { [523, 659, 784].forEach((f, i) => beep(f, 0.05, i * 0.05, 0.05)); },
+  escape() { beep(330, 0.12, 0, 0.04, "square", 0.6); },
+  tick() { beep(1500, 0.01, 0, 0.02); },
+  over() { [392, 330, 262, 196].forEach((f, i) => beep(f, 0.18, i * 0.2, 0.05)); },
+  ding() { beep(880, 0.08, 0, 0.04); beep(1318, 0.12, 0.08, 0.04); },
+};
+
+// ---------- pixel helpers ----------
+function rect(x, y, w, h, c) { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), w, h); }
+function disc(cx, cy, rx, ry, c) {
+  g.fillStyle = c; cx = Math.round(cx); cy = Math.round(cy);
+  for (let y = -ry; y <= ry; y++) { const w = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry + 0.5)))); g.fillRect(cx - w, cy + y, w * 2 + 1, 1); }
+}
+function line(x0, y0, x1, y1, c) {
+  g.fillStyle = c; x0 = Math.round(x0); y0 = Math.round(y0); x1 = Math.round(x1); y1 = Math.round(y1);
+  const dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1, dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1; let e = dx + dy;
+  for (let i = 0; i < 400; i++) { g.fillRect(x0, y0, 1, 1); if (x0 === x1 && y0 === y1) break; const e2 = 2 * e; if (e2 >= dy) { e += dy; x0 += sx; } if (e2 <= dx) { e += dx; y0 += sy; } }
+}
+// tiny 3x5 font for in-game text
+const F = { "0":"111101101101111","1":"010110010010111","2":"111001111100111","3":"111001111001111","4":"101101111001001","5":"111100111001111","6":"111100111101111","7":"111001001001001","8":"111101111101111","9":"111101111001111","+":"000010111010000","x":"000101010101000","!":"010010010000010"," ":"000000000000000",
+  A:"010101111101101",B:"110101110101110",D:"110101101101110",E:"111100110100111",G:"011100101101011",I:"111010010010111",L:"100100100100111",N:"110101101101101",O:"010101101101010",P:"110101110100100",R:"110101110101101",S:"011100010001110",T:"111010010010010",U:"101101101101111",W:"101101101111101",Y:"101101010010010",K:"101101110101101",C:"011100100100011",H:"101101111101101",M:"101111111101101",V:"101101101101010",F:"111100110100100" };
+function text(s, x, y, c) { g.fillStyle = c; for (const ch of s) { const f = F[ch] || F[" "]; for (let i = 0; i < 15; i++) if (f[i] === "1") g.fillRect(x + (i % 3), y + ((i / 3) | 0), 1, 1); x += 4; } }
+
+// ---------- game state ----------
+const LEFT = 150;                       // the archer's half
+const PADS = [{ x: 34, y: 168 }, { x: 96, y: 118 }, { x: 34, y: 70 }];   // shooting spots (feet position)
+const GRAV = 140, MAXESC = 10;
+let state = "title", t = 0, clock = 0;
+let archer, arrows, shots, balloons, packs, parts, floats, escaped, score, angle, power, charging, spawnT, packT, msgT;
+let best = store.get("bb.best", 0);
+const keys = {};
+let joy = { x: 0, y: 0 };
+
+function newGame() {
+  archer = { x: PADS[0].x, y: PADS[0].y, face: 1, walk: 0 };
+  arrows = 15; shots = []; balloons = []; packs = []; parts = []; floats = [];
+  escaped = 0; score = 0; angle = 35; power = 0; charging = false; spawnT = 1; packT = rnd(7, 11); t = 0;
+  state = "play"; closeDlg(); msg("Stand on a shooting spot (X) and fire!");
+}
+function msg(s) { $("#sMsg").textContent = s; msgT = 4; }
+const onPad = () => PADS.some((p) => Math.abs(archer.x - p.x) <= 7 && Math.abs(archer.y - p.y) <= 5);
+
+function spawnBalloon() {
+  const lvl = t / 60;
+  const types = ["red"];
+  if (t > 25) types.push("yellow");
+  if (t > 55) types.push("blue", "red");
+  if (t > 95) types.push("black");
+  let type = types[Math.random() * types.length | 0];
+  if (Math.random() < 0.06) type = "gold";
+  const base = 16 + Math.min(34, t * 0.12);
+  balloons.push({
+    type, x: rnd(LEFT + 24, W - 10), y: H + 12, vy: -(base * (type === "yellow" ? 1.55 : type === "black" ? 0.8 : 1) * rnd(0.85, 1.15)),
+    ph: Math.random() * 6, amp: type === "blue" ? 22 : 3, hp: type === "black" ? 2 : 1, x0: 0, hit: 0,
+  });
+  const b = balloons[balloons.length - 1]; b.x0 = b.x = clamp(b.x, LEFT + 24 + b.amp, W - 8 - b.amp);
+}
+
+function fire() {
+  if (state !== "play") return;
+  if (!onPad()) { msg("You can only shoot from a shooting spot (X)."); power = 0; return; }
+  if (arrows <= 0) { msg("Out of arrows! Grab an arrow pack."); power = 0; return; }
+  if (power < 0.06) return;
+  const a = angle * Math.PI / 180, sp = 70 + 200 * power;
+  const hx = archer.x + 5, hy = archer.y - 9;
+  shots.push({ x: hx, y: hy, vx: Math.cos(a) * sp, vy: -Math.sin(a) * sp, pops: 0, life: 6 });
+  arrows--; sfx.twang(power); power = 0;
+}
+
+function update(dt) {
+  clock += dt;
+  for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 120 * dt; p.life -= dt; }
+  parts = parts.filter((p) => p.life > 0);
+  for (const f of floats) { f.y -= 14 * dt; f.life -= dt; }
+  floats = floats.filter((f) => f.life > 0);
+  if (state !== "play") return;
+  t += dt;
+  msgT -= dt; if (msgT <= 0 && msgT > -1) { $("#sMsg").textContent = onPad() ? (arrows ? "Hold Space to draw, release to shoot" : "Out of arrows!") : "Move to a shooting spot (X) to shoot"; msgT = -2; }
+
+  // archer moves freely in the left half
+  let mx = joy.x + (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0), my = joy.y + (keys.KeyS ? 1 : 0) - (keys.KeyW ? 1 : 0);
+  const ml = Math.hypot(mx, my); if (ml > 1) { mx /= ml; my /= ml; }
+  const spd = charging ? 35 : 75;
+  archer.x = clamp(archer.x + mx * spd * dt, 6, LEFT - 6);
+  archer.y = clamp(archer.y + my * spd * dt, 34, H - 14);
+  archer.walk += ml * dt * 10;
+  // snap gently onto a pad when you're basically on it
+  if (ml < 0.05) for (const p of PADS) if (Math.hypot(archer.x - p.x, archer.y - p.y) < 6) { archer.x += (p.x - archer.x) * Math.min(1, dt * 10); archer.y += (p.y - archer.y) * Math.min(1, dt * 10); }
+
+  // aim + charge
+  if (keys.ArrowUp) angle = Math.min(85, angle + 55 * dt);
+  if (keys.ArrowDown) angle = Math.max(-20, angle - 55 * dt);
+  if (charging && onPad() && arrows > 0) power = Math.min(1, power + dt / 1.1); else if (!charging) power = 0;
+  $("#aimInfo") && ($("#aimInfo").textContent = Math.round(angle) + "°" + (charging ? "  ·  " + Math.round(power * 100) + "%" : ""));
+
+  // arrows in flight: projectile motion
+  for (const s of shots) {
+    s.vy += GRAV * dt; s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+    const tipx = s.x + s.vx / Math.hypot(s.vx, s.vy) * 4, tipy = s.y + s.vy / Math.hypot(s.vx, s.vy) * 4;
+    for (const b of balloons) {
+      if (b.dead || b.hit > 0) continue;
+      if (((tipx - b.x) / 6) ** 2 + ((tipy - b.y) / 7) ** 2 <= 1) {
+        b.hp--; b.hit = 0.25;
+        if (b.hp <= 0) { b.dead = true; popBalloon(b, s); } else { sfx.tick(); }
+      }
+    }
+    if (s.x > W + 10 || s.y > H + 10 || s.x < -10 || s.life <= 0) {
+      s.done = true;
+      if (s.pops >= 2) { const bonus = s.pops - 1; arrows += bonus; score += 15 * s.pops; floats.push({ x: Math.min(W - 30, s.x - 10), y: 60, s: "+" + bonus + " ARROW", life: 1.4 }); msg(`${s.pops}x pop! +${bonus} arrow${bonus > 1 ? "s" : ""}`); sfx.multi(s.pops); }
+    }
+  }
+  shots = shots.filter((s) => !s.done);
+
+  // balloons rise; 10 escapes ends the game
+  spawnT -= dt;
+  if (spawnT <= 0) { spawnBalloon(); if (t > 40 && Math.random() < Math.min(0.5, t / 300)) spawnBalloon(); spawnT = Math.max(0.55, 2.3 - t * 0.012) * rnd(0.7, 1.3); }
+  for (const b of balloons) {
+    b.hit = Math.max(0, b.hit - dt);
+    b.y += b.vy * dt; b.x = b.x0 + Math.sin(clock * (b.type === "blue" ? 2.2 : 1.3) + b.ph) * b.amp;
+    if (b.y < -14 && !b.dead) { b.dead = true; b.escaped = true; escaped++; sfx.escape(); msg(`A balloon got away! (${escaped}/${MAXESC})`); if (escaped >= MAXESC) return gameOver(); }
+  }
+  balloons = balloons.filter((b) => !b.dead);
+
+  // arrow packs: show up for 5-10 s somewhere in the left half
+  packT -= dt * (arrows < 5 ? 2.2 : 1);
+  if (packT <= 0 && packs.length < 2) {
+    let x, y, tries = 0; do { x = rnd(12, LEFT - 12); y = rnd(40, H - 18); tries++; } while (tries < 20 && PADS.some((p) => Math.hypot(p.x - x, p.y - y) < 18));
+    packs.push({ x, y, life: rnd(5, 10), n: 5 + (Math.random() * 4 | 0) });
+    packT = rnd(8, 14); sfx.ding(); msg("An arrow pack appeared!");
+  }
+  for (const p of packs) {
+    p.life -= dt;
+    if (Math.abs(archer.x - p.x) < 8 && Math.abs(archer.y - 6 - p.y) < 10) { p.got = true; arrows += p.n; sfx.pick(); floats.push({ x: p.x - 10, y: p.y - 12, s: "+" + p.n, life: 1.2 }); msg(`Picked up ${p.n} arrows.`); }
+  }
+  packs = packs.filter((p) => !p.got && p.life > 0);
+  updateStatus();
+}
+
+function popBalloon(b, s) {
+  s.pops++; sfx.pop();
+  const pts = b.type === "gold" ? 50 : b.type === "black" ? 30 : b.type === "yellow" ? 20 : b.type === "blue" ? 20 : 10;
+  score += pts; floats.push({ x: b.x - 4, y: b.y - 10, s: "+" + pts, life: 0.9 });
+  if (b.type === "gold") { arrows += 3; msg("Golden balloon! +3 arrows"); floats.push({ x: b.x - 14, y: b.y - 2, s: "+3 ARROW", life: 1.2 }); }
+  const col = BCOL[b.type][0];
+  for (let i = 0; i < 10; i++) { const a = Math.random() * 6.28, v = rnd(20, 60); parts.push({ x: b.x, y: b.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 10, life: rnd(0.3, 0.6), c: col }); }
+}
+
+function gameOver() {
+  state = "over"; sfx.over();
+  const nb = score > best; if (nb) { best = score; store.set("bb.best", best); }
+  updateStatus();
+  dialog("Game Over", `<div class="body"><div class="icon warn">!</div><div>
+    <p>Ten balloons got away.</p>
+    <p>Score: <b class="big">${score}</b></p>
+    <p>${nb ? "<b>That's a new high score!</b>" : "High score: " + best}</p>
+    <p>You lasted ${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}.</p></div></div>
+    <div class="btns"><button class="btn bevel def" data-d="new">Play Again</button><button class="btn bevel" data-d="exit">Exit</button></div>`);
+}
+
+// ---------- status bar ----------
+function updateStatus() {
+  $("#sArrows").textContent = "Arrows: " + (arrows ?? 15);
+  $("#sScore").textContent = "Score: " + (score || 0) + "   Hi: " + best;
+  let h = ""; for (let i = 0; i < MAXESC; i++) h += `<i class="${i < (escaped || 0) ? "on" : ""}"></i>`;
+  $("#sEsc").innerHTML = h;
+}
+
+// ---------- drawing ----------
+const BCOL = { red: ["#e02020", "#ff8080"], yellow: ["#e8c000", "#fff080"], blue: ["#2050e0", "#80a8ff"], black: ["#303030", "#909090"], gold: ["#ffb000", "#fff4b0"] };
+const SKY = ["#5f9fe0", "#73afe8", "#87c0ef", "#9dcdf4", "#b3daf8"];
+function render() {
+  // banded sky (16-colour era style), clouds, distant hills
+  for (let i = 0; i < SKY.length; i++) rect(0, i * 40, W, 41, SKY[i]);
+  const co = (clock * 4) % (W + 80);
+  for (const [cx, cy, s] of [[30, 26, 1], [150, 16, 0.8], [250, 40, 1.2], [340, 22, 0.9]]) {
+    const x = ((cx - co + W + 80) % (W + 80)) - 40;
+    disc(x, cy, 12 * s, 5 * s, "#ffffff"); disc(x + 10 * s, cy + 2, 9 * s, 4 * s, "#ffffff"); disc(x - 10 * s, cy + 2, 8 * s, 3 * s, "#e8f4ff");
+  }
+  rect(0, H - 8, W, 8, "#2e8b2e"); rect(0, H - 8, W, 1, "#50b050");
+  for (let x = 0; x < W; x += 7) rect(x + ((x * 13) % 5), H - 10, 1, 2, "#2e8b2e");
+  // the archer's half
+  g.fillStyle = "rgba(255,255,255,.10)"; g.fillRect(0, 30, LEFT, H - 38);
+  for (let y = 30; y < H - 8; y += 4) rect(LEFT, y, 1, 2, "#ffffff");
+
+  // shooting spots
+  for (const p of PADS) {
+    const on = Math.abs(archer.x - p.x) <= 7 && Math.abs(archer.y - p.y) <= 5;
+    rect(p.x - 10, p.y + 1, 21, 3, "#8b5a2b"); rect(p.x - 10, p.y + 1, 21, 1, "#c08040"); rect(p.x - 8, p.y + 4, 2, 3, "#5a3a1a"); rect(p.x + 7, p.y + 4, 2, 3, "#5a3a1a");
+    if (!on) { // a clear X marking the shooting spot
+      const c = Math.floor(clock * 2) % 2 ? "#b00000" : "#e03030";
+      for (let k = -2; k <= 2; k++) { rect(p.x + k, p.y - 4 + k, 1, 1, c); rect(p.x + k, p.y - 4 - k, 1, 1, c); }
+    }
+  }
+  // arrow packs (blink when about to vanish)
+  for (const p of packs) {
+    if (p.life < 2 && Math.floor(clock * 8) % 2) continue;
+    rect(p.x - 5, p.y - 6, 11, 12, "#7a4a1a"); rect(p.x - 4, p.y - 5, 9, 10, "#b07030");
+    for (let k = 0; k < 3; k++) { rect(p.x - 3 + k * 3, p.y - 10, 1, 8, "#5a3a1a"); rect(p.x - 4 + k * 3, p.y - 11, 3, 1, "#e0e0e0"); }
+    text(String(p.n), p.x - 1, p.y - 2, "#ffffff");
+  }
+  // balloons
+  for (const b of balloons) {
+    const [c, hl] = BCOL[b.type], fl = b.hit > 0 && Math.floor(clock * 30) % 2;
+    let sx = b.x, sy = b.y;
+    for (let k = 0; k < 8; k++) rect(sx + Math.round(Math.sin(clock * 3 + k * 0.6 + b.ph) * 1), sy + 7 + k, 1, 1, "#404040");
+    disc(sx, sy, 5, 6, fl ? "#ffffff" : c); rect(sx - 1, sy + 6, 3, 1, c);
+    rect(sx - 3, sy - 4, 2, 2, hl);
+    if (b.type === "black" && b.hp === 1) { line(sx - 2, sy - 1, sx + 1, sy + 2, "#ffffff"); }
+    if (b.type === "gold") { rect(sx - 1, sy - 1, 3, 3, "#ffffff"); }
+  }
+  // arrows in flight
+  for (const s of shots) drawArrow(s.x, s.y, Math.atan2(s.vy, s.vx));
+  // archer
+  drawArcher();
+  // particles + floating text
+  for (const p of parts) rect(p.x, p.y, 1, 1, p.c);
+  for (const f of floats) text(f.s, Math.round(f.x), Math.round(f.y), Math.floor(clock * 10) % 2 ? "#ffff40" : "#ffffff");
+  // power meter
+  if (state === "play" && charging && onPad()) {
+    rect(archer.x - 9, archer.y - 26, 20, 4, "#000000"); rect(archer.x - 8, archer.y - 25, Math.round(18 * power), 2, power > 0.9 ? "#ff4040" : "#ffff40");
+  }
+  if (state === "paused") { g.fillStyle = "rgba(0,0,0,.35)"; g.fillRect(0, 0, W, H); text("PAUSED", W / 2 - 12, H / 2 - 2, "#ffffff"); }
+}
+function drawArrow(x, y, a) {
+  const c = Math.cos(a), s = Math.sin(a);
+  line(x - c * 5, y - s * 5, x + c * 4, y + s * 4, "#5a3a1a");
+  rect(x + c * 4, y + s * 4, 1, 1, "#d0d0d0"); rect(x + c * 4 - s, y + s * 4 + c, 1, 1, "#a0a0a0"); rect(x + c * 4 + s, y + s * 4 - c, 1, 1, "#a0a0a0");
+  rect(x - c * 5 - s, y - s * 5 + c, 1, 1, "#e02020"); rect(x - c * 5 + s, y - s * 5 - c, 1, 1, "#e02020");
+}
+function drawArcher() {
+  if (!archer) return;
+  const x = Math.round(archer.x), y = Math.round(archer.y), step = Math.floor(archer.walk) % 2;
+  // legs, tunic, belt, head, hat
+  rect(x - 2, y - 4, 1, 4, "#4a3018"); rect(x + 1, y - 4, 1, 4, "#4a3018");
+  if (step) { rect(x - 3, y - 1, 1, 1, "#4a3018"); rect(x + 2, y - 2, 1, 1, "#4a3018"); }
+  rect(x - 3, y - 11, 6, 7, "#2a7a2a"); rect(x - 3, y - 7, 6, 1, "#5a3a1a");
+  rect(x - 2, y - 15, 4, 4, "#f0c090"); rect(x + 1, y - 14, 1, 1, "#000000");
+  rect(x - 3, y - 17, 6, 2, "#1f5f1f"); rect(x - 4, y - 16, 1, 1, "#1f5f1f"); rect(x + 3, y - 18, 1, 2, "#e02020");
+  // quiver on the back
+  rect(x - 5, y - 13, 2, 7, "#7a4a1a"); if (arrows > 0) { rect(x - 5, y - 15, 1, 2, "#d0d0d0"); if (arrows > 1) rect(x - 4, y - 16, 1, 2, "#d0d0d0"); }
+  // bow: raised at the aim angle on a shooting spot, lowered otherwise
+  const ready = state !== "title" && onPad();
+  const a = (ready ? angle : -60) * Math.PI / 180, hx = x + 4, hy = y - 9;
+  const dx = Math.cos(a), dy = -Math.sin(a), nx = -dy, ny = dx;
+  rect(x + 2, y - 10, 2, 1, "#f0c090");
+  const pts = []; for (let i = -5; i <= 5; i++) { const k = i / 5; pts.push([hx + dx * (2 - 2 * k * k) + nx * i, hy + dy * (2 - 2 * k * k) + ny * i]); }
+  for (let i = 0; i < pts.length - 1; i++) line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], "#8b4513");
+  const pull = ready ? power * 4 : 0, sx = hx - dx * pull, sy = hy - dy * pull;
+  line(pts[0][0], pts[0][1], sx, sy, "#ffffff"); line(pts[pts.length - 1][0], pts[pts.length - 1][1], sx, sy, "#ffffff");
+  if (ready && arrows > 0) drawArrow(sx + dx * 5, sy + dy * 5, Math.atan2(dy, dx));
+}
+
+// ---------- dialogs & menus ----------
+function dialog(title, html) { $("#dlgTitle").textContent = title; $("#dlgBody").innerHTML = html; $("#dlgWrap").classList.add("show"); }
+function closeDlg() { $("#dlgWrap").classList.remove("show"); }
+const HOW = `<div class="body"><div class="icon">i</div><div>
+  <p><b>Don't let 10 balloons escape.</b></p>
+  <p>${isTouch ? "Use the MOVE pad to walk anywhere in the left half." : "<kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk anywhere in the left half."}</p>
+  <p>You can only shoot from a shooting spot marked <b>X</b>.</p>
+  <p>${isTouch ? "On the right pad: hold to draw the bow, slide up/down to aim, release to shoot." : "<kbd>↑</kbd><kbd>↓</kbd> aim the bow. Hold <kbd>Space</kbd> to draw, release to shoot."}</p>
+  <p>Arrows fly in real arcs. Arrow packs appear for a few seconds; run and grab them. Pop 2+ balloons with one arrow to win arrows back.</p></div></div>`;
+function showTitle() {
+  dialog("Welcome", HOW + `<div class="btns"><button class="btn bevel def" data-d="new">Start</button></div>`);
+}
+$("#dlgWrap").addEventListener("click", (e) => {
+  const d = e.target.closest("[data-d]"); if (!d) return;
+  if (d.dataset.d === "new") newGame();
+  if (d.dataset.d === "exit") location.href = "../";
+  if (d.dataset.d === "ok") { closeDlg(); if (state === "paused") state = "play"; }
+});
+$("#dlgX").addEventListener("click", () => { closeDlg(); if (state === "title" || state === "over") newGame(); else if (state === "paused") state = "play"; });
+function pause() {
+  if (state === "play") { state = "paused"; charging = false; dialog("Paused", `<div class="body"><div class="icon">i</div><div><p>The game is paused.</p></div></div><div class="btns"><button class="btn bevel def" data-d="ok">Resume</button></div>`); }
+  else if (state === "paused") { state = "play"; closeDlg(); }
+}
+function toggleSnd() { muted = !muted; store.set("bb.muted", muted); $("#sndLbl").textContent = (muted ? "   " : "✓ ") + "Sound"; if (!muted) sfx.ding(); }
+$("#sndLbl").textContent = (muted ? "   " : "✓ ") + "Sound";
+document.querySelectorAll(".menu > span").forEach((sp) => sp.addEventListener("click", (e) => {
+  const m = sp.parentElement, open = m.classList.contains("open");
+  document.querySelectorAll(".menu").forEach((x) => x.classList.remove("open"));
+  if (!open) { m.classList.add("open"); if (state === "play") pause(); }
+  e.stopPropagation();
+}));
+document.querySelectorAll(".drop div").forEach((it) => it.addEventListener("click", (e) => {
+  e.stopPropagation(); document.querySelectorAll(".menu").forEach((x) => x.classList.remove("open"));
+  const a = it.dataset.a;
+  if (a === "new") newGame();
+  if (a === "pause") { if (state === "play" || state === "paused") pause(); }
+  if (a === "exit") location.href = "../";
+  if (a === "sound") toggleSnd();
+  if (a === "how") { if (state === "play") state = "paused"; dialog("How to Play", HOW + `<div class="btns"><button class="btn bevel def" data-d="ok">OK</button></div>`); }
+  if (a === "about") { if (state === "play") state = "paused"; dialog("About Balloon Bow", `<div class="body"><div class="icon">i</div><div><p><b>Balloon Bow</b> v1.0</p><p>A tribute to the little archery games we found on family PCs.</p><p>Made in partnership by Sakhawat Adib &amp; Claude for The Oven.</p></div></div><div class="btns"><button class="btn bevel def" data-d="ok">OK</button></div>`); }
+}));
+addEventListener("click", () => document.querySelectorAll(".menu").forEach((x) => x.classList.remove("open")));
+$("#tbMin").addEventListener("click", (e) => { e.stopPropagation(); pause(); });
+$("#tbMax").addEventListener("click", (e) => { e.stopPropagation(); newGame(); });
+
+// ---------- keyboard ----------
+addEventListener("keydown", (e) => {
+  if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "F2"].includes(e.code)) e.preventDefault();
+  if (e.code === "F2") return newGame();
+  if (e.code === "KeyM") return toggleSnd();
+  if (e.code === "KeyP" || e.code === "Escape") return pause();
+  if ((e.code === "Enter" || e.code === "Space") && $("#dlgWrap").classList.contains("show")) { if (e.repeat) return; const def = $("#dlgBody .btn.def"); if (def) def.click(); return; }
+  keys[e.code] = true;
+  if (e.code === "Space" && state === "play" && !e.repeat) charging = true;
+});
+addEventListener("keyup", (e) => {
+  keys[e.code] = false;
+  if (e.code === "Space" && charging) { charging = false; fire(); }
+});
+addEventListener("blur", () => { for (const k in keys) keys[k] = false; charging = false; power = 0; });
+document.addEventListener("visibilitychange", () => { if (document.hidden && state === "play") pause(); });
+
+// ---------- touch: move pad + aim pad ----------
+const stick = $("#stick"), knob = stick.querySelector(".knob"), aim = $("#aim");
+let stickId = null, aimId = null, aimY = 0;
+function stickMove(e) {
+  const r = stick.getBoundingClientRect(), rad = Math.min(r.width, r.height) / 2;
+  let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+  const d = Math.hypot(dx, dy), max = rad * 0.7; if (d > max) { dx *= max / d; dy *= max / d; }
+  knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  joy = d < rad * 0.12 ? { x: 0, y: 0 } : { x: dx / max, y: dy / max };
+}
+stick.addEventListener("pointerdown", (e) => { e.preventDefault(); stickId = e.pointerId; try { stick.setPointerCapture(e.pointerId); } catch (_) {} stickMove(e); });
+stick.addEventListener("pointermove", (e) => { if (e.pointerId === stickId) stickMove(e); });
+const stickEnd = (e) => { if (e.pointerId !== stickId) return; stickId = null; joy = { x: 0, y: 0 }; knob.style.transform = "translate(-50%, -50%)"; };
+stick.addEventListener("pointerup", stickEnd); stick.addEventListener("pointercancel", stickEnd);
+aim.addEventListener("pointerdown", (e) => { e.preventDefault(); if (state !== "play") return; aimId = e.pointerId; aimY = e.clientY; try { aim.setPointerCapture(e.pointerId); } catch (_) {} charging = true; aim.classList.add("on"); });
+aim.addEventListener("pointermove", (e) => { if (e.pointerId !== aimId) return; angle = clamp(angle + (aimY - e.clientY) * 0.45, -20, 85); aimY = e.clientY; });
+const aimEnd = (e) => { if (e.pointerId !== aimId) return; aimId = null; aim.classList.remove("on"); if (charging) { charging = false; fire(); } };
+aim.addEventListener("pointerup", aimEnd); aim.addEventListener("pointercancel", aimEnd);
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  update(dt); render(); requestAnimationFrame(frame);
+}
+archer = { x: PADS[0].x, y: PADS[0].y, face: 1, walk: 0 }; arrows = 15; shots = []; balloons = []; packs = []; parts = []; floats = []; escaped = 0; score = 0; angle = 35; power = 0;
+for (let i = 0; i < 4; i++) { spawnBalloon(); balloons[i].y = 60 + i * 35; }
+fit(); updateStatus(); showTitle(); requestAnimationFrame(frame);
+setTimeout(fit, 50);
+
+if (location.search.includes("debug")) window.__bb = {
+  get: () => ({ state, t: +t.toFixed(1), arrows, escaped, score, balloons: balloons.length, packs: packs.length, onPad: onPad(), angle: Math.round(angle), shots: shots.length }),
+  set: (o) => { if (o.angle != null) angle = o.angle; if (o.x != null) archer.x = o.x; if (o.y != null) archer.y = o.y; if (o.power != null) power = o.power; if (o.t != null) t = o.t; },
+  fire, balloons: () => balloons, newGame, spawnPack: () => { packT = 0; },
+};
+})();
+</script>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
