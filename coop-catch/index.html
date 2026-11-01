@@ -175,23 +175,57 @@ function updateHen(h, dt, i) {
   }
   // laying: settle, fluff up, wiggle, cluck, pop!
   h.layT -= dt * (state === "play" ? 1 : 0);
-  if (h.layT <= 0 && h.mode !== "lay") { h.mode = "lay"; h.modeT = 0.75; h.puff = 0; }
+  if (h.layT <= 0 && h.mode !== "lay") { h.mode = "lay"; h.modeT = 0.75; h.puff = 0; h.held = 0; h.next = rollEgg(); }
   if (h.mode === "lay") {
     h.puff = Math.min(1, h.puff + dt * 2.2); h.modeT -= dt;
     if (h.modeT <= 0) {
-      layEgg(h); h.mode = "idle"; h.modeT = rnd(0.4, 1); h.puff = 0; h.flap = 0.6; h.bubble = 0.6;
+      if (state === "play" && !fairToLay(h.x, h.next)) { h.modeT = 0.12; h.held += 0.12; if (h.held > 0.6 && Math.random() < 0.08) h.bubble = 0.5; return; }   // "not yet…"
+      layEgg(h, h.next); h.mode = "idle"; h.modeT = rnd(0.4, 1); h.puff = 0; h.flap = 0.6; h.bubble = 0.6;
       h.layT = Math.max(1.2, rnd(3.2, 6.5) - t * 0.018) * (0.8 + hens.length * 0.07);
     }
   }
 }
-function layEgg(h) {
-  const rot = Math.min(0.26, 0.07 + t * 0.0012), boost = Math.min(0.1, 0.05 + t * 0.0003);
-  const r = Math.random();
-  let type = "egg", kind = null;
-  if (t > 6 && r < rot) type = "rotten";
-  else if (t > 4 && r < rot + boost) { type = "boost"; kind = pick(lives < 5 ? ["speed", "wide", "magnet", "slow", "gold", "gold", "heart"] : ["speed", "wide", "magnet", "slow", "gold", "gold"]); }
-  eggs.push({ x: h.x, y: RAIL + 6, vy: 30, type, kind, rot: rnd(-0.3, 0.3), spin: rnd(-2, 2), wob: Math.random() * 6 });
+function rollEgg() {
+  const rot = Math.min(0.26, 0.07 + t * 0.0012), boost = Math.min(0.1, 0.05 + t * 0.0003), r = Math.random();
+  if (t > 6 && r < rot) return { type: "rotten", kind: null };
+  if (t > 4 && r < rot + boost) return { type: "boost", kind: pick(lives < 5 ? ["speed", "wide", "magnet", "slow", "gold", "gold", "heart"] : ["speed", "wide", "magnet", "slow", "gold", "gold"]) };
+  return { type: "egg", kind: null };
+}
+function layEgg(h, nx) {
+  eggs.push({ x: h.x, y: RAIL + 6, vy: 30, type: nx.type, kind: nx.kind, rot: rnd(-0.3, 0.3), spin: rnd(-2, 2), wob: Math.random() * 6 });
   sfx.lay(); if (Math.random() < 0.35) sfx.bawk();
+}
+
+// ---------- fairness planner ----------
+// When will an egg (at height y, speed vy) reach the basket? Exact for our accel-then-cap fall.
+const EGG_ACC = 260, EGG_V0 = 30;
+const eggVmax = () => Math.min(330, 150 + t * 1.3);
+function timeToBasket(y, vy) {
+  const D = basketY() - 10 - y; if (D <= 0) return 0;
+  const vmax = eggVmax(), v = Math.min(vy, vmax);
+  const ta = (vmax - v) / EGG_ACC, da = (v + vmax) / 2 * ta;
+  if (D <= da) return (-v + Math.sqrt(v * v + 2 * EGG_ACC * D)) / EGG_ACC;
+  return ta + (D - da) / vmax;
+}
+const RUN = 230;   // under her top speed (she needs a moment to accelerate), so the plan is always reachable
+function fairToLay(x, nx) {
+  const tNew = timeToBasket(RAIL + 6, EGG_V0), mustCatch = nx.type === "egg";
+  // she has to be able to get there from where she is, or from the last egg she must catch before it
+  if (mustCatch) {
+    let fromX = girl.x, fromT = 0;
+    for (const e of eggs) { if (e.done || e.type !== "egg") continue; const te = timeToBasket(e.y, e.vy); if (te <= tNew && te >= fromT) { fromT = te; fromX = e.x; } }
+    if (Math.abs(fromX - x) - 29 * 0.6 > (tNew - fromT) * RUN) return false;   // plan with the normal basket: boosts can wear off
+  }
+  for (const e of eggs) {
+    if (e.done) continue;
+    const te = timeToBasket(e.y, e.vy), gap = Math.abs(te - tNew), dx = Math.abs(e.x - x);
+    const eMust = e.type === "egg";
+    // two eggs you must catch: she needs time to run between them
+    if (mustCatch && eMust && gap < Math.max(0, dx - 29 * 0.6) / RUN + 0.25) return false;
+    // a rotten egg must never sit on top of a must-catch egg
+    if ((mustCatch && e.type === "rotten") || (nx.type === "rotten" && eMust)) { if (gap < 0.45 && dx < 29 * 2 + 14) return false; }
+  }
+  return true;
 }
 
 // ---------- main update ----------
@@ -220,9 +254,9 @@ function update(rawDt) {
   girl.squish = Math.max(0, girl.squish - rawDt * 4); girl.yuck = Math.max(0, girl.yuck - rawDt); girl.happy = Math.max(0, girl.happy - rawDt);
 
   // eggs
-  const vmax = Math.min(330, 150 + t * 1.3), by = basketY(), half = basketHalf();
+  const vmax = eggVmax(), by = basketY(), half = basketHalf();
   for (const e of eggs) {
-    e.vy = Math.min(vmax, e.vy + 260 * dt); e.y += e.vy * dt; e.rot += e.spin * dt; e.wob += dt * 6;
+    e.vy = Math.min(vmax, e.vy + EGG_ACC * dt); e.y += e.vy * dt; e.rot += e.spin * dt; e.wob += dt * 6;
     if (fx.magnet > 0 && e.type !== "rotten" && e.y > RAIL + 40) e.x += clamp(girl.x - e.x, -1, 1) * Math.min(Math.abs(girl.x - e.x), 220 * dt);
     if (!e.done && e.y + 10 >= by && e.y - 10 <= by + 14 && Math.abs(e.x - girl.x) <= half) { e.done = true; catchEgg(e); }
     else if (!e.done && e.y + 11 >= GROUND) { e.done = true; dropEgg(e); }
@@ -249,10 +283,11 @@ function catchEgg(e) {
   streak++; const pts = 10 * mult(); score += pts; sfx.catch(streak);
   if (streak === 10 || streak === 25) { floats.push({ x: girl.x, y: basketY() - 44, text: `Streak! ×${mult()}`, t: 0 }); girl.happy = 1; }
 }
+let dropsLog = 0;
 function dropEgg(e) {
   if (e.type === "rotten") { splats.push({ x: e.x, rotten: true, life: 2.5 }); sfx.crack(); return; }      // good riddance
   if (e.type === "boost") { splats.push({ x: e.x, col: BOOSTS[e.kind].col, life: 1.6 }); return; }       // missed boosters cost nothing
-  lives--; streak = 0; sfx.crack(); splats.push({ x: e.x, life: 4 });
+  lives--; dropsLog++; streak = 0; sfx.crack(); splats.push({ x: e.x, life: 4 });
   for (let i = 0; i < 8; i++) bits.push({ x: e.x, y: GROUND - 4, vx: rnd(-80, 80), vy: rnd(-160, -40), life: rnd(0.3, 0.6), c: "#fff3dc" });
   floats.push({ x: e.x, y: GROUND - 40, text: "−1", t: 0, bad: true });
   if (lives <= 0) gameOver();
@@ -424,6 +459,12 @@ function render() {
     else { ctx.fillStyle = "#fff7ea"; ctx.beginPath(); ctx.ellipse(x, y, 16 * S, 4.5 * S, 0, 0, 7); ctx.fill(); ctx.fillStyle = "#ffc23d"; ctx.beginPath(); ctx.ellipse(x + 2 * S, y - 0.5 * S, 5.5 * S, 3 * S, 0, 0, 7); ctx.fill(); }
   }
   ctx.globalAlpha = 1;
+  if (eggs) for (const e of eggs) {
+    const k = clamp((e.y - RAIL) / (GROUND - RAIL), 0, 1);
+    ctx.globalAlpha = 0.1 + 0.25 * k; ctx.fillStyle = e.type === "rotten" ? "#6f7d48" : "#3b3140";
+    ctx.beginPath(); ctx.ellipse(X(e.x), Y(GROUND) + 2 * S, (4 + 9 * k) * S, (1.5 + 2.5 * k) * S, 0, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
   for (const h of hens) drawHen(h);
   for (const f of feathers) { ctx.save(); ctx.translate(X(f.x), Y(f.y)); ctx.rotate(Math.sin(f.r) * 0.8); ctx.globalAlpha = Math.min(1, f.life); ctx.fillStyle = "#fffaf0"; ctx.beginPath(); ctx.ellipse(0, 0, 2 * S, 6 * S, 0, 0, 7); ctx.fill(); ctx.restore(); }
   ctx.globalAlpha = 1;
@@ -487,7 +528,7 @@ document.addEventListener("visibilitychange", () => { if (document.hidden) pause
 
 if (location.search.includes("debug")) window.__cc = {
   get: () => ({ state, t: +t.toFixed(1), lives, score, streak, hens: hens.length, eggs: eggs.length, x: Math.round(girl.x) }),
-  eggs: () => eggs, girl: () => girl, keys, set: (o) => { if (o.t != null) t = o.t; if (o.x != null) girl.x = o.x; }, half: basketHalf, FW: () => FW,
+  eggs: () => eggs, girl: () => girl, keys, ttb: (e) => timeToBasket(e.y, e.vy), drops: () => dropsLog, set: (o) => { if (o.t != null) t = o.t; if (o.x != null) girl.x = o.x; }, half: basketHalf, FW: () => FW,
 };
 })();
 </script>
