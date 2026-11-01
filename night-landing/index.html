@@ -74,14 +74,14 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const rnd = (a, b) => a + Math.random() * (b - a);
 
 // ---------- world: 400 x 250, ground at 232 ----------
-const W = 400, H = 250, GROUND = 232, COLS = 20, CW = W / COLS, FH = 9, STEP = 12, START_Y = 26;
+const W = 400, H = 250, GROUND = 232, COLS = 20, CW = W / COLS, FH = 9, STEP = 10, START_Y = 26;
 const cv = $("#c"), ctx = cv.getContext("2d");
 let DPR = 1, VW = 0, VH = 0, S = 1, OX = 0, OY = 0;
 function resize() {
-  DPR = Math.min(2, devicePixelRatio || 1); VW = innerWidth; VH = innerHeight;
+  DPR = Math.min(1.5, devicePixelRatio || 1); VW = innerWidth; VH = innerHeight;
   cv.width = VW * DPR; cv.height = VH * DPR; cv.style.width = VW + "px"; cv.style.height = VH + "px";
   S = Math.min(VW / W, (VH - 20) / H); OX = (VW - W * S) / 2; OY = Math.max(10, (VH - H * S) * 0.62);
-  makeSkyline();
+  buildBackdrop(); ufoSprite = null; if (cols) for (const c of cols) if (c) c.dirty = true;
 }
 addEventListener("resize", resize);
 
@@ -133,7 +133,7 @@ let best = store.get("nl.best", 0), bestLevel = store.get("nl.bestLevel", 0);
 
 function buildCity(L) {
   cols = [];
-  const maxH = Math.min(17, 5 + L * 2), minH = Math.min(6, 1 + Math.floor(L / 2));
+  const maxH = Math.min(17, 4 + L * 2), minH = Math.min(6, 1 + Math.floor(L / 2));
   for (let i = 0; i < COLS; i++) {
     if (i < 2 || i >= COLS - 1) { cols.push(null); continue; }
     if (Math.random() < Math.max(0.05, 0.22 - L * 0.03)) { cols.push(null); continue; } // a gap
@@ -145,9 +145,9 @@ function buildCity(L) {
 function startLevel(L) {
   level = L; levelScore = 0;
   buildCity(L);
-  ufo = { x: -20, y: START_Y, speed: Math.min(165, 92 + L * 9), crashed: false, landT: 0, tilt: 0 };
+  ufo = { x: 16, dir: 1, y: START_Y, speed: Math.min(160, 84 + L * 9), crashed: false, landT: 0, tilt: 0 };
   bomb = null; debris = []; flashes = []; dust = []; floatTxt = [];
-  msg = { text: "LEVEL " + L, sub: L === 1 ? "clear a path, then land" : "taller skyline · faster descent", t: 0 };
+  msg = { text: "LEVEL " + L, sub: L === 1 ? "flatten the city, then land" : "taller skyline · faster descent", t: 0 };
   setState("play"); setHum(true); updateHud();
 }
 function newGame() { score = 0; hideCard(); startLevel(1); }
@@ -157,7 +157,7 @@ function setState(s) { state = s; stateT = 0; }
 function dropBomb() {
   if (state !== "play" || bomb || ufo.y + 6 >= GROUND - 1) return;
   if (ufo.x < 0 || ufo.x > W) return;
-  bomb = { x: ufo.x, y: ufo.y + 6, vy: 40, trail: [] }; sfx.drop();
+  bomb = { x: ufo.x, y: ufo.y + 6, vy: 110, trail: [] }; sfx.drop();
 }
 function colAt(x) { const i = Math.floor(x / CW); return i >= 0 && i < COLS ? i : -1; }
 const topY = (c) => GROUND - c.h * FH;
@@ -172,22 +172,20 @@ function update(dt) {
   if (cols) for (const c of cols) if (c) c.shake = Math.max(0, c.shake - dt);
   if (msg) { msg.t += dt; if (msg.t > 2.6) msg = null; }
   if (state === "landing") {
-    ufo.y = Math.min(GROUND - 7, ufo.y + 18 * dt); ufo.x += (ufo.tx - ufo.x) * Math.min(1, dt * 2); ufo.speed *= 0.97;
-    if (stateT > 2.2) levelDone();
+    ufo.y = Math.min(GROUND - 7, ufo.y + Math.max(20, (GROUND - 7 - ufo.y) * 1.6) * dt); ufo.x += (ufo.tx - ufo.x) * Math.min(1, dt * 2); ufo.tilt *= 0.9;
+    if (stateT > 2.4 && ufo.y >= GROUND - 7.5) levelDone();
     return;
   }
   if (state === "crashing") { if (stateT > 1.8) gameOver(); return; }
   if (state !== "play") return;
 
-  // flight: left to right, wrap, sink one step per pass
-  ufo.x += ufo.speed * dt;
-  ufo.tilt = Math.sin(clock * 2.2) * 0.04;
-  if (ufo.x > W + 20) {
-    ufo.x = -20;
-    if (ufo.y + STEP + 6 >= GROUND - 2) {               // close to the ground: try to land
-      ufo.y = GROUND - 8; ufo.tx = W * 0.5; landingCheck(); return;
-    }
-    ufo.y += STEP; sfx.pass();
+  // flight: swing left and right across the city, sinking one step at every turn
+  ufo.x += ufo.dir * ufo.speed * dt;
+  ufo.tilt = ufo.dir * 0.06 + Math.sin(clock * 2.2) * 0.03;
+  const EDGE = 16;
+  if ((ufo.dir > 0 && ufo.x >= W - EDGE) || (ufo.dir < 0 && ufo.x <= EDGE)) {
+    ufo.x = clamp(ufo.x, EDGE, W - EDGE); ufo.dir *= -1;
+    if (ufo.y + STEP + 6 < GROUND - 2) { ufo.y += STEP; sfx.pass(); }   // at the lowest lane it just keeps sweeping
   }
   // collision with a building
   const L = ufo.x - 12, R = ufo.x + 12, B = ufo.y + 5;
@@ -198,7 +196,7 @@ function update(dt) {
   }
   // bomb: falls straight down, eats a few floors off whatever it hits
   if (bomb) {
-    bomb.vy = Math.min(260, bomb.vy + 340 * dt); bomb.y += bomb.vy * dt;
+    bomb.vy = Math.min(340, bomb.vy + 520 * dt); bomb.y += bomb.vy * dt;
     bomb.trail.push([bomb.x, bomb.y]); if (bomb.trail.length > 10) bomb.trail.shift();
     const i = colAt(bomb.x), c = i >= 0 ? cols[i] : null;
     const bx0 = i * CW + 2, bx1 = (i + 1) * CW - 2;
@@ -215,15 +213,16 @@ function explode(i, c, n) {
   flashes.push({ x: cx, y: yTop + 4, t: 0, dur: 0.5, r: 18 + n * 4 });
   for (let k = 0; k < 10 + n * 5; k++) debris.push({ x: cx + rnd(-7, 7), y: yTop + rnd(0, n * FH), vx: rnd(-60, 60), vy: rnd(-110, -20), r: Math.random() * 6, vr: rnd(-8, 8), s: rnd(1.2, 3), life: rnd(0.8, 1.6), c: Math.random() < 0.3 ? "#ffb86b" : "#3a4066" });
   puff(cx, yTop + n * FH * 0.5, 8 + n * 2);
-  c.h -= n; c.shake = 0.3;
+  c.h -= n; c.shake = 0.3; c.dirty = true;
   const pts = n * 5 * level; score += pts; levelScore += pts;
   floatTxt.push({ x: cx, y: yTop - 6, text: "+" + pts, t: 0 });
   sfx.boom(n); updateHud();
+  if (cols.every((q) => !q || q.h <= 0)) { ufo.tx = clamp(ufo.x, 30, W - 30); setTimeout(() => { if (state === "play") landingCheck(); }, 450); }
 }
 function puff(x, y, n) { for (let k = 0; k < n; k++) dust.push({ x: x + rnd(-6, 6), y: y + rnd(-4, 4), vx: rnd(-14, 14), vy: rnd(-16, -4), r: rnd(3, 7), life: rnd(1, 2.2), max: 2.2 }); }
 function landingCheck() {
-  // lands only if the strip it glides over is clear
-  setState("landing"); setHum(false); sfx.land();
+  // the city is flat: glide down and land
+  bomb = null; setState("landing"); setHum(false); sfx.land();
   const bonus = 150 * level; score += bonus; levelScore += bonus;
   floatTxt.push({ x: W / 2, y: GROUND - 30, text: "SAFE LANDING +" + bonus, t: 0, big: true });
   updateHud();
@@ -268,145 +267,152 @@ function showTitle() {
   showCard(`<div class="kicker">A night over the city</div><h1>Night <span>Landing</span></h1>
     <p>Your saucer crosses the skyline and sinks a little lower every pass.</p>
     <p>${isTouch ? "Tap" : "Press <kbd>Space</kbd>"} to drop a bomb. Only one can fall at a time.</p>
-    <p>Bring the towers down before you reach them, and land.</p>
+    <p>Flatten every tower before you sink into them. When the city is gone, you land.</p>
     <span class="go">${isTouch ? "Tap" : "Space"} to begin</span>`);
 }
 
 // ---------- render ----------
+// Everything that doesn't move is painted once into offscreen canvases.
 const wx = (x) => OX + x * S, wy = (y) => OY + y * S;
-let stars = [], farCity = [], midCity = [];
-function makeSkyline() {
-  stars = []; for (let i = 0; i < 120; i++) stars.push({ x: Math.random() * VW, y: Math.random() * VH * 0.7, r: Math.random() < 0.9 ? 0.7 : 1.3, tw: Math.random() * 6 });
-  farCity = []; let x = -20; while (x < VW + 40) { const w = rnd(18, 46); farCity.push({ x, w, h: rnd(30, 120) }); x += w + rnd(2, 10); }
-  midCity = []; x = -20; while (x < VW + 40) { const w = rnd(24, 60); midCity.push({ x, w, h: rnd(40, 170), lit: Math.random() }); x += w + rnd(4, 16); }
-}
-function render() {
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  // deep night gradient with a hazy horizon
-  const g = ctx.createLinearGradient(0, 0, 0, VH);
+const layer = (w, h) => { const c = document.createElement("canvas"); c.width = Math.max(1, Math.ceil(w * DPR)); c.height = Math.max(1, Math.ceil(h * DPR)); const x = c.getContext("2d"); x.scale(DPR, DPR); return [c, x]; };
+let backdrop = null, twinkles = [], ufoSprite = null, glowSprite = null;
+function buildBackdrop() {
+  const [c, b] = layer(VW, VH);
+  const g = b.createLinearGradient(0, 0, 0, VH);
   g.addColorStop(0, "#07081a"); g.addColorStop(0.55, "#141634"); g.addColorStop(0.85, "#2a2350"); g.addColorStop(1, "#1a1530");
-  ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
-  for (const s of stars) { ctx.globalAlpha = 0.35 + 0.35 * Math.sin(clock * 1.3 + s.tw); ctx.fillStyle = "#cfd6ff"; ctx.fillRect(s.x, s.y, s.r, s.r); }
-  ctx.globalAlpha = 1;
-  // moon behind thin cloud
+  b.fillStyle = g; b.fillRect(0, 0, VW, VH);
+  b.fillStyle = "#cfd6ff";
+  for (let i = 0; i < 110; i++) { b.globalAlpha = 0.2 + Math.random() * 0.5; const r = Math.random() < 0.9 ? 0.8 : 1.4; b.fillRect(Math.random() * VW, Math.random() * VH * 0.7, r, r); }
+  b.globalAlpha = 1;
+  twinkles = []; for (let i = 0; i < 18; i++) twinkles.push({ x: Math.random() * VW, y: Math.random() * VH * 0.6, ph: Math.random() * 6 });
+  // moon: a true crescent with a soft halo
   const mx = VW * 0.78, my = VH * 0.16, mr = Math.min(VW, VH) * 0.06;
-  const mg = ctx.createRadialGradient(mx, my, mr * 0.2, mx, my, mr * 4); mg.addColorStop(0, "rgba(220,225,255,.22)"); mg.addColorStop(1, "rgba(220,225,255,0)");
-  ctx.fillStyle = mg; ctx.fillRect(mx - mr * 4, my - mr * 4, mr * 8, mr * 8);
-  { const mi = moonImg(mr); ctx.drawImage(mi, mx - mr - 2, my - mr - 2, (Math.round(mr) + 2) * 2, (Math.round(mr) + 2) * 2); }
-  // distant city layers
+  const mg = b.createRadialGradient(mx, my, mr * 0.2, mx, my, mr * 4); mg.addColorStop(0, "rgba(220,225,255,.2)"); mg.addColorStop(1, "rgba(220,225,255,0)");
+  b.fillStyle = mg; b.fillRect(mx - mr * 4, my - mr * 4, mr * 8, mr * 8);
+  const [mc, m] = layer(mr * 2 + 4, mr * 2 + 4);
+  m.fillStyle = "#e9ecff"; m.beginPath(); m.arc(mr + 2, mr + 2, mr, 0, 7); m.fill();
+  m.globalCompositeOperation = "destination-out"; m.beginPath(); m.arc(mr + 2 + mr * 0.45, mr + 2 - mr * 0.2, mr * 0.95, 0, 7); m.fill();
+  b.drawImage(mc, mx - mr - 2, my - mr - 2, mr * 2 + 4, mr * 2 + 4);
+  // distant city layers and fog
   const groundY = wy(GROUND);
-  ctx.fillStyle = "#1c1b3d"; for (const b of farCity) ctx.fillRect(b.x, groundY - b.h * 0.8, b.w, b.h * 0.8 + 4);
-  ctx.fillStyle = "#16163a"; for (const b of midCity) { ctx.fillRect(b.x, groundY - b.h * 0.55, b.w, b.h * 0.55 + 4); }
-  // drifting fog band
-  const fog = ctx.createLinearGradient(0, groundY - 120, 0, groundY);
-  fog.addColorStop(0, "rgba(120,110,190,0)"); fog.addColorStop(1, "rgba(120,110,190,.18)");
-  ctx.fillStyle = fog; ctx.fillRect(0, groundY - 120, VW, 120);
+  let x = -20; b.fillStyle = "#1c1b3d";
+  while (x < VW + 40) { const w = rnd(18, 46), h = rnd(30, 120) * 0.8 * Math.max(0.6, S / 2.5); b.fillRect(x, groundY - h, w, h + 4); x += w + rnd(2, 10); }
+  x = -20; b.fillStyle = "#16163a";
+  while (x < VW + 40) { const w = rnd(24, 60), h = rnd(40, 170) * 0.55 * Math.max(0.6, S / 2.5); b.fillRect(x, groundY - h, w, h + 4); x += w + rnd(4, 16); }
+  const fog = b.createLinearGradient(0, groundY - 120, 0, groundY); fog.addColorStop(0, "rgba(120,110,190,0)"); fog.addColorStop(1, "rgba(120,110,190,.18)");
+  b.fillStyle = fog; b.fillRect(0, groundY - 120, VW, 120);
+  // ground
+  const gg = b.createLinearGradient(0, groundY, 0, VH); gg.addColorStop(0, "#151733"); gg.addColorStop(1, "#0a0b1c");
+  b.fillStyle = gg; b.fillRect(0, groundY, VW, VH - groundY);
+  b.fillStyle = "rgba(143,211,255,.12)"; b.fillRect(0, groundY, VW, 1);
+  backdrop = c;
+  // shared soft glow sprite (used for explosions, bomb, antenna lights)
+  const [gc, gx] = layer(64, 64); const rg = gx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  rg.addColorStop(0, "rgba(255,255,255,1)"); rg.addColorStop(0.35, "rgba(255,255,255,.45)"); rg.addColorStop(1, "rgba(255,255,255,0)");
+  gx.fillStyle = rg; gx.fillRect(0, 0, 64, 64); glowSprite = tint(gc, "#ffb070");
+}
+function tint(src, color) { const c = document.createElement("canvas"); c.width = src.width; c.height = src.height; const x = c.getContext("2d"); x.drawImage(src, 0, 0); x.globalCompositeOperation = "source-in"; x.fillStyle = color; x.fillRect(0, 0, c.width, c.height); return c; }
+function glow(x, y, r, a) { ctx.globalAlpha = a; ctx.drawImage(glowSprite, x - r, y - r, r * 2, r * 2); ctx.globalAlpha = 1; }
 
-  if (!cols) return;
-  // the playfield's edges fade softly
-  // buildings
-  for (let i = 0; i < COLS; i++) {
-    const c = cols[i]; if (!c || c.h <= 0) continue;
-    const sh = c.shake > 0 ? Math.sin(clock * 80) * c.shake * 2 : 0;
-    const x0 = wx(i * CW + 2) + sh, w = (CW - 4) * S, top = wy(topY(c)), h = groundY - top;
-    const bg = ctx.createLinearGradient(0, top, 0, groundY); bg.addColorStop(0, "#2a2f55"); bg.addColorStop(1, "#1b1e3d");
-    ctx.fillStyle = bg; ctx.fillRect(x0, top, w, h);
-    ctx.fillStyle = "rgba(143,211,255,.10)"; ctx.fillRect(x0, top, 1.2 * S, h);           // rim light
-    ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(x0 + w - 1.5 * S, top, 1.5 * S, h);
-    // windows (lit warm/cool, some flicker)
+function paintBuilding(c, i) {
+  // one canvas per tower, repainted only when it loses floors
+  const w = (CW - 4) * S, h = Math.max(1, c.h * FH * S), pad = 8 * S;
+  const [cv2, b] = layer(w + 2 * S, h + pad);
+  const oy = pad;
+  if (c.h > 0) {
+    const bg = b.createLinearGradient(0, oy, 0, oy + h); bg.addColorStop(0, "#2a2f55"); bg.addColorStop(1, "#1b1e3d");
+    b.fillStyle = bg; b.fillRect(S, oy, w, h);
+    b.fillStyle = "rgba(143,211,255,.10)"; b.fillRect(S, oy, 1.2 * S, h);
+    b.fillStyle = "rgba(0,0,0,.25)"; b.fillRect(S + w - 1.5 * S, oy, 1.5 * S, h);
     for (let f = 0; f < c.h; f++) {
-      const row = c.wins[f % c.wins.length], fy = groundY - (f + 1) * FH * S + 2.5 * S;
+      const row = c.wins[f % c.wins.length], fy = oy + h - (f + 1) * FH * S + 2.5 * S;
       for (let k = 0; k < 3; k++) {
-        const v = row[k]; const wxp = x0 + (2.3 + k * 4.6) * S;
-        if (v < 0) { ctx.fillStyle = "rgba(10,12,30,.55)"; }
-        else {
-          const flick = (Math.sin(clock * 3 + i * 7 + f * 3 + k) > 0.985) ? 0.4 : 1;
-          ctx.fillStyle = v === 0 ? `rgba(255,184,107,${0.75 * flick})` : `rgba(143,211,255,${0.7 * flick})`;
-        }
-        ctx.fillRect(wxp, fy, 2.4 * S, 3.6 * S);
+        const v = row[k];
+        b.fillStyle = v < 0 ? "rgba(10,12,30,.55)" : v === 0 ? "rgba(255,184,107,.75)" : "rgba(143,211,255,.7)";
+        b.fillRect(S + (2.3 + k * 4.6) * S, fy, 2.4 * S, 3.6 * S);
       }
     }
-    ctx.fillStyle = "#353b6a"; ctx.fillRect(x0 - 0.5 * S, top, w + 1 * S, 1.4 * S);         // roof ledge
-    if (c.ant && c.h === c.h0) {
-      ctx.fillStyle = "#353b6a"; ctx.fillRect(x0 + w / 2 - 0.5 * S, top - 6 * S, 1 * S, 6 * S);
-      if (Math.floor(clock * 1.2 + i) % 2) { ctx.fillStyle = "#ff5a6e"; ctx.beginPath(); ctx.arc(x0 + w / 2, top - 6.5 * S, 1.3 * S, 0, 7); ctx.fill();
-        const rg = ctx.createRadialGradient(x0 + w / 2, top - 6.5 * S, 0, x0 + w / 2, top - 6.5 * S, 7 * S); rg.addColorStop(0, "rgba(255,90,110,.35)"); rg.addColorStop(1, "rgba(255,90,110,0)"); ctx.fillStyle = rg; ctx.fillRect(x0 + w / 2 - 7 * S, top - 13 * S, 14 * S, 14 * S); }
-    }
-    if (c.h < c.h0) { ctx.fillStyle = "#1b1e3d"; for (let k = 0; k < 4; k++) ctx.fillRect(x0 + k * w / 4, top - ((i * 7 + k * 3) % 3) * S, w / 4 + 0.5, 2 * S); } // jagged broken top
+    b.fillStyle = "#353b6a"; b.fillRect(S * 0.5, oy, w + S, 1.4 * S);
+    if (c.ant && c.h === c.h0) { b.fillStyle = "#353b6a"; b.fillRect(S + w / 2 - 0.5 * S, oy - 6 * S, 1 * S, 6 * S); }
+    if (c.h < c.h0) { b.fillStyle = "#1b1e3d"; for (let k = 0; k < 4; k++) b.fillRect(S + k * w / 4, oy - ((i * 7 + k * 3) % 3) * S, w / 4 + 0.5, 2 * S); }
   }
-  // ground
-  const gg = ctx.createLinearGradient(0, groundY, 0, VH); gg.addColorStop(0, "#151733"); gg.addColorStop(1, "#0a0b1c");
-  ctx.fillStyle = gg; ctx.fillRect(0, groundY, VW, VH - groundY);
-  ctx.fillStyle = "rgba(143,211,255,.12)"; ctx.fillRect(0, groundY, VW, 1);
+  c.img = cv2; c.imgPad = pad; c.dirty = false;
+}
+function buildUfo() {
+  const sz = 60 * S, [c, u] = layer(sz, sz), cx = sz / 2, cy = sz * 0.35;
+  const beam = u.createLinearGradient(0, cy + 4 * S, 0, cy + 36 * S); beam.addColorStop(0, "rgba(143,211,255,.20)"); beam.addColorStop(1, "rgba(143,211,255,0)");
+  u.fillStyle = beam; u.beginPath(); u.moveTo(cx - 5 * S, cy + 4 * S); u.lineTo(cx + 5 * S, cy + 4 * S); u.lineTo(cx + 13 * S, cy + 36 * S); u.lineTo(cx - 13 * S, cy + 36 * S); u.closePath(); u.fill();
+  const gl = u.createRadialGradient(cx, cy, 0, cx, cy, 24 * S); gl.addColorStop(0, "rgba(143,211,255,.30)"); gl.addColorStop(1, "rgba(143,211,255,0)");
+  u.fillStyle = gl; u.fillRect(0, 0, sz, sz);
+  const hull = u.createLinearGradient(0, cy - 2 * S, 0, cy + 5 * S); hull.addColorStop(0, "#c9d3f5"); hull.addColorStop(1, "#5a6496");
+  u.fillStyle = hull; u.beginPath(); u.ellipse(cx, cy + 1.5 * S, 13 * S, 3.6 * S, 0, 0, 7); u.fill();
+  const dome = u.createLinearGradient(0, cy - 6 * S, 0, cy); dome.addColorStop(0, "rgba(220,240,255,.95)"); dome.addColorStop(1, "rgba(143,211,255,.55)");
+  u.fillStyle = dome; u.beginPath(); u.ellipse(cx, cy - 0.5 * S, 5.5 * S, 4.6 * S, 0, Math.PI, 0); u.fill();
+  ufoSprite = { c, sz, cx, cy };
+}
+
+function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (!backdrop) buildBackdrop();
+  ctx.drawImage(backdrop, 0, 0, VW, VH);
+  ctx.fillStyle = "#e6ebff";
+  for (const t of twinkles) { const a = 0.5 + 0.5 * Math.sin(clock * 1.6 + t.ph); if (a > 0.15) { ctx.globalAlpha = a; ctx.fillRect(t.x, t.y, 1.3, 1.3); } }
+  ctx.globalAlpha = 1;
+  if (!cols) return;
+  const groundY = wy(GROUND);
+
+  // towers (cached sprites) + blinking antenna lights
+  for (let i = 0; i < COLS; i++) {
+    const c = cols[i]; if (!c || c.h <= 0) continue;
+    if (c.dirty || !c.img) paintBuilding(c, i);
+    const sh = c.shake > 0 ? Math.sin(clock * 80) * c.shake * 2 : 0;
+    const x0 = wx(i * CW + 2) + sh, top = wy(topY(c));
+    ctx.drawImage(c.img, x0 - S, top - c.imgPad, c.img.width / DPR, c.img.height / DPR);
+    if (c.ant && c.h === c.h0 && Math.floor(clock * 1.2 + i) % 2) {
+      const ax = x0 + (CW - 4) * S / 2, ay = top - 6.5 * S;
+      ctx.fillStyle = "#ff5a6e"; ctx.fillRect(ax - S, ay - S, 2 * S, 2 * S);
+      ctx.globalAlpha = 0.35; ctx.drawImage(glowSprite, ax - 6 * S, ay - 6 * S, 12 * S, 12 * S); ctx.globalAlpha = 1;
+    }
+  }
   // landing strip lights
   for (let k = 0; k < 9; k++) { const lx = wx(W * 0.3 + k * W * 0.05); ctx.fillStyle = (Math.floor(clock * 4) - k) % 9 === 0 ? "rgba(143,211,255,.9)" : "rgba(143,211,255,.25)"; ctx.fillRect(lx - 1, groundY + 2, 2, 2); }
 
-  // dust & smoke
-  for (const p of dust) { ctx.globalAlpha = clamp(p.life / p.max, 0, 1) * 0.35; ctx.fillStyle = "#6f6a9a"; ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y), p.r * S * (1.6 - p.life / p.max * 0.6), 0, 7); ctx.fill(); }
+  // dust, explosion glows, debris (no per-particle gradients or transforms)
+  ctx.fillStyle = "#6f6a9a";
+  for (const p of dust) { ctx.globalAlpha = clamp(p.life / p.max, 0, 1) * 0.3; ctx.beginPath(); ctx.arc(wx(p.x), wy(p.y), p.r * S * (1.6 - p.life / p.max * 0.6), 0, 7); ctx.fill(); }
   ctx.globalAlpha = 1;
-  // explosion glows
-  for (const f of flashes) {
-    const k = f.t / f.dur, r = f.r * S * (0.5 + k * 0.8);
-    const fg = ctx.createRadialGradient(wx(f.x), wy(f.y), 0, wx(f.x), wy(f.y), r);
-    fg.addColorStop(0, `rgba(255,220,170,${0.9 * (1 - k)})`); fg.addColorStop(0.4, `rgba(255,140,80,${0.5 * (1 - k)})`); fg.addColorStop(1, "rgba(255,120,60,0)");
-    ctx.fillStyle = fg; ctx.fillRect(wx(f.x) - r, wy(f.y) - r, r * 2, r * 2);
-  }
-  for (const d of debris) { ctx.globalAlpha = clamp(d.life, 0, 1); ctx.fillStyle = d.c; ctx.save(); ctx.translate(wx(d.x), wy(d.y)); ctx.rotate(d.r); ctx.fillRect(-d.s * S / 2, -d.s * S / 2, d.s * S, d.s * S); ctx.restore(); }
+  for (const f of flashes) { const k = f.t / f.dur; glow(wx(f.x), wy(f.y), f.r * S * (0.6 + k * 0.8), 0.9 * (1 - k)); }
+  for (const d of debris) { ctx.globalAlpha = clamp(d.life, 0, 1); ctx.fillStyle = d.c; const sz = d.s * S; ctx.fillRect(wx(d.x) - sz / 2, wy(d.y) - sz / 2, sz, sz); }
   ctx.globalAlpha = 1;
 
-  // bomb with a faint glowing trail
+  // bomb
   if (bomb) {
-    for (let k = 0; k < bomb.trail.length; k++) { const [tx, ty] = bomb.trail[k]; ctx.globalAlpha = k / bomb.trail.length * 0.4; ctx.fillStyle = "#ffb86b"; ctx.beginPath(); ctx.arc(wx(tx), wy(ty), 1.2 * S, 0, 7); ctx.fill(); }
-    ctx.globalAlpha = 1; ctx.fillStyle = "#ffe0b8"; ctx.beginPath(); ctx.arc(wx(bomb.x), wy(bomb.y), 1.8 * S, 0, 7); ctx.fill();
-    const bg = ctx.createRadialGradient(wx(bomb.x), wy(bomb.y), 0, wx(bomb.x), wy(bomb.y), 6 * S); bg.addColorStop(0, "rgba(255,184,107,.5)"); bg.addColorStop(1, "rgba(255,184,107,0)"); ctx.fillStyle = bg; ctx.fillRect(wx(bomb.x) - 6 * S, wy(bomb.y) - 6 * S, 12 * S, 12 * S);
+    ctx.fillStyle = "#ffb86b";
+    for (let k = 0; k < bomb.trail.length; k++) { const [tx, ty] = bomb.trail[k]; ctx.globalAlpha = k / bomb.trail.length * 0.4; ctx.fillRect(wx(tx) - S, wy(ty) - S, 2 * S, 2 * S); }
+    ctx.globalAlpha = 1; glow(wx(bomb.x), wy(bomb.y), 6 * S, 0.6);
+    ctx.fillStyle = "#ffe0b8"; ctx.beginPath(); ctx.arc(wx(bomb.x), wy(bomb.y), 1.8 * S, 0, 7); ctx.fill();
   }
   // UFO
-  if (ufo && !ufo.crashed && (state === "play" || state === "landing" || state === "between" || state === "title")) drawUFO(ufo.x, ufo.y + Math.sin(clock * 3) * 0.8, ufo.tilt);
-
-  // soft fade at the playfield edges where the saucer wraps
-  const ef = 30 * S;
-  let eg = ctx.createLinearGradient(wx(0), 0, wx(0) + ef, 0); eg.addColorStop(0, "rgba(11,13,26,.55)"); eg.addColorStop(1, "rgba(11,13,26,0)"); ctx.fillStyle = eg; ctx.fillRect(wx(0), 0, ef, groundY);
-  eg = ctx.createLinearGradient(wx(W), 0, wx(W) - ef, 0); eg.addColorStop(0, "rgba(11,13,26,.55)"); eg.addColorStop(1, "rgba(11,13,26,0)"); ctx.fillStyle = eg; ctx.fillRect(wx(W) - ef, 0, ef, groundY);
-  if (OX > 2) { ctx.fillStyle = "rgba(11,13,26,.55)"; ctx.fillRect(0, 0, OX, groundY); ctx.fillRect(OX + W * S, 0, VW - OX - W * S, groundY); }
+  if (ufo && !ufo.crashed && (state === "play" || state === "landing" || state === "between" || state === "title" || state === "paused")) drawUFO(ufo.x, ufo.y + (state === "landing" ? 0 : Math.sin(clock * 3) * 0.8), ufo.tilt || 0);
+  if (OX > 2) { ctx.fillStyle = "rgba(11,13,26,.5)"; ctx.fillRect(0, 0, OX, groundY); ctx.fillRect(OX + W * S, 0, VW - OX - W * S, groundY); }
 
   // floating text + level message
   ctx.textAlign = "center";
-  for (const f of floatTxt) { ctx.globalAlpha = 1 - f.t / 1.2; ctx.fillStyle = f.big ? "#8fd3ff" : "#ffd3a0"; ctx.font = `700 ${(f.big ? 12 : 9) * S}px system-ui`; ctx.fillText(f.text, wx(f.x), wy(f.y - f.t * 14)); }
+  for (const f of floatTxt) { ctx.globalAlpha = 1 - f.t / 1.2; ctx.fillStyle = f.big ? "#8fd3ff" : "#ffd3a0"; ctx.font = `700 ${Math.round((f.big ? 12 : 9) * S)}px system-ui`; ctx.fillText(f.text, wx(f.x), wy(f.y - f.t * 14)); }
   ctx.globalAlpha = 1;
   if (msg && state === "play") {
     const a = msg.t < 0.5 ? msg.t / 0.5 : msg.t > 2 ? Math.max(0, (2.6 - msg.t) / 0.6) : 1;
-    ctx.globalAlpha = a; ctx.fillStyle = "#e6e9ff"; ctx.font = `800 ${18 * S}px system-ui`; ctx.fillText(msg.text, wx(W / 2), wy(H * 0.42));
-    ctx.fillStyle = "#8a90b8"; ctx.font = `600 ${8 * S}px system-ui`; ctx.fillText(msg.sub, wx(W / 2), wy(H * 0.42) + 13 * S); ctx.globalAlpha = 1;
+    ctx.globalAlpha = a; ctx.fillStyle = "#e6e9ff"; ctx.font = `800 ${Math.round(18 * S)}px system-ui`; ctx.fillText(msg.text, wx(W / 2), wy(H * 0.42));
+    ctx.fillStyle = "#8a90b8"; ctx.font = `600 ${Math.round(8 * S)}px system-ui`; ctx.fillText(msg.sub, wx(W / 2), wy(H * 0.42) + 13 * S); ctx.globalAlpha = 1;
   }
   ctx.textAlign = "start";
 }
-let moonC = null, moonR = 0;
-function moonImg(r) { // a true crescent, cut out on its own little canvas
-  if (moonC && moonR === Math.round(r)) return moonC;
-  moonR = Math.round(r); moonC = document.createElement("canvas"); moonC.width = moonC.height = (moonR + 2) * 2 * DPR;
-  moonC.style.width = moonC.style.height = (moonR + 2) * 2 + "px";
-  const m = moonC.getContext("2d"); m.scale(DPR, DPR);
-  m.fillStyle = "#e9ecff"; m.beginPath(); m.arc(moonR + 2, moonR + 2, moonR, 0, 7); m.fill();
-  m.globalCompositeOperation = "destination-out"; m.beginPath(); m.arc(moonR + 2 + moonR * 0.45, moonR + 2 - moonR * 0.2, moonR * 0.95, 0, 7); m.fill();
-  return moonC;
-}
 function drawUFO(x, y, tilt) {
-  const X = wx(x), Y = wy(y);
+  if (!ufoSprite) buildUfo();
+  const { c, sz, cx, cy } = ufoSprite, X = wx(x), Y = wy(y);
   ctx.save(); ctx.translate(X, Y); ctx.rotate(tilt);
-  // faint scanning beam
-  const beam = ctx.createLinearGradient(0, 4 * S, 0, 40 * S); beam.addColorStop(0, "rgba(143,211,255,.20)"); beam.addColorStop(1, "rgba(143,211,255,0)");
-  ctx.fillStyle = beam; ctx.beginPath(); ctx.moveTo(-5 * S, 4 * S); ctx.lineTo(5 * S, 4 * S); ctx.lineTo(13 * S, 40 * S); ctx.lineTo(-13 * S, 40 * S); ctx.closePath(); ctx.fill();
-  // glow
-  const gl = ctx.createRadialGradient(0, 0, 0, 0, 0, 26 * S); gl.addColorStop(0, "rgba(143,211,255,.30)"); gl.addColorStop(1, "rgba(143,211,255,0)");
-  ctx.fillStyle = gl; ctx.fillRect(-26 * S, -26 * S, 52 * S, 52 * S);
-  // hull
-  const hull = ctx.createLinearGradient(0, -2 * S, 0, 5 * S); hull.addColorStop(0, "#c9d3f5"); hull.addColorStop(1, "#5a6496");
-  ctx.fillStyle = hull; ctx.beginPath(); ctx.ellipse(0, 1.5 * S, 13 * S, 3.6 * S, 0, 0, 7); ctx.fill();
-  // dome
-  const dome = ctx.createLinearGradient(0, -6 * S, 0, 0); dome.addColorStop(0, "rgba(220,240,255,.95)"); dome.addColorStop(1, "rgba(143,211,255,.55)");
-  ctx.fillStyle = dome; ctx.beginPath(); ctx.ellipse(0, -0.5 * S, 5.5 * S, 4.6 * S, 0, Math.PI, 0); ctx.fill();
-  // running lights
-  for (let k = -2; k <= 2; k++) { const on = (Math.floor(clock * 6) + k + 5) % 5 === 0; ctx.fillStyle = on ? "#ffffff" : "rgba(143,211,255,.7)"; ctx.beginPath(); ctx.arc(k * 4.6 * S, 2.2 * S, 0.9 * S, 0, 7); ctx.fill(); }
+  ctx.drawImage(c, -cx, -cy, sz, sz);
+  for (let k = -2; k <= 2; k++) { const on = (Math.floor(clock * 6) + k + 5) % 5 === 0; ctx.fillStyle = on ? "#ffffff" : "rgba(143,211,255,.7)"; ctx.fillRect(k * 4.6 * S - 0.9 * S, 1.3 * S, 1.8 * S, 1.8 * S); }
   ctx.restore();
 }
 
@@ -416,7 +422,7 @@ function frame(now) {
   const dt = Math.min(0.033, (now - last) / 1000); last = now;
   update(dt); render(); requestAnimationFrame(frame);
 }
-resize(); buildCity(2); ufo = { x: W * 0.35, y: START_Y + 30, speed: 0, tilt: 0 }; debris = []; flashes = []; dust = []; floatTxt = []; msg = null;
+resize(); buildCity(2); ufo = { x: W * 0.35, dir: 1, y: START_Y + 30, speed: 0, tilt: 0 }; debris = []; flashes = []; dust = []; floatTxt = []; msg = null;
 updateHud(); showTitle(); requestAnimationFrame(frame);
 
 // ---------- input: one button ----------
