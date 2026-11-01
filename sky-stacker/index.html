@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Sky Stacker · tap-to-drop tower stacking game | The Oven</title>
+<meta name="description" content="A free one-tap tower stacking game in your browser. Time the swinging crane, drop each floor, chain perfect drops, fight the wind, and fill your tower with tiny residents. No ads, works on mobile.">
+<meta name="keywords" content="tower stacking game, stack blocks game, crane game, tower bloxx, one tap game, browser game, no ads">
+<meta name="author" content="Sakhawat Adib">
+<link rel="canonical" href="https://sakhadib.github.io/games/sky-stacker/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Oven">
+<meta property="og:title" content="Sky Stacker · The Oven">
+<meta property="og:description" content="Time the swinging crane, drop each floor, and build the tallest tower you can. One tap, no ads.">
+<meta property="og:url" content="https://sakhadib.github.io/games/sky-stacker/">
+<meta property="og:image" content="https://sakhadib.github.io/games/assets/shots/sky-stacker.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sakhadib.github.io/games/assets/shots/sky-stacker.jpg">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Sky Stacker","url":"https://sakhadib.github.io/games/sky-stacker/","description":"A free one-tap tower stacking game. Time the swinging crane, drop each floor, chain perfect drops, fight the wind, and fill your tower with tiny residents.","image":"https://sakhadib.github.io/games/assets/shots/sky-stacker.jpg","genre":["Arcade","Stacking"],"gamePlatform":["Web browser","Mobile","Desktop"],"applicationCategory":"Game","operatingSystem":"Any","playMode":"SinglePlayer","isAccessibleForFree":true,"inLanguage":"en","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Sakhawat Adib","url":"https://portfolio.sakhawatadib.com"},"isPartOf":{"@type":"WebSite","name":"The Oven","url":"https://sakhadib.github.io/games/"}}</script>
+<meta name="theme-color" content="#8ecae6">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect x='4' y='10' width='8' height='5' rx='1' fill='%23e76f51'/><rect x='5' y='5' width='7' height='5' rx='1' fill='%232a9d8f'/><rect x='7' y='0' width='1' height='5' fill='%23264653'/></svg>">
+<style>
+  :root { --ink: #1d2236; --paper: #fffaf0; --red: #e76f51; --gold: #ffb703; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8ecae6; }
+  body { font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink);
+    touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; display: block; }
+  #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 16px; pointer-events: none; z-index: 3; }
+  .stat { background: rgba(255,250,240,.85); border-radius: 14px; padding: 8px 12px; box-shadow: 0 2px 0 rgba(29,34,54,.12); }
+  #floors { font-size: 30px; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+  #floors small { font-size: 13px; font-weight: 800; opacity: .55; letter-spacing: 0; margin-left: 3px; }
+  #pop { margin-top: 5px; font-size: 13px; font-weight: 800; opacity: .8; }
+  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  .btns { display: flex; gap: 8px; pointer-events: auto; }
+  .btn { font: 800 14px system-ui; color: var(--ink); background: rgba(255,250,240,.85); border: 0; border-radius: 12px; padding: 8px 12px; cursor: pointer; text-decoration: none; box-shadow: 0 2px 0 rgba(29,34,54,.12); line-height: 1; }
+  #best { font-size: 13px; font-weight: 800; }
+  #wind { font-size: 13px; font-weight: 900; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.35); min-height: 18px; }
+  #ov { position: fixed; inset: 0; display: none; place-items: center; z-index: 10; padding: 16px; background: rgba(29,34,54,.3); }
+  #ov.show { display: grid; }
+  .card { width: 100%; max-width: 400px; background: var(--paper); border-radius: 24px; padding: 26px 24px; text-align: center; box-shadow: 0 8px 0 rgba(29,34,54,.2), 0 30px 60px rgba(0,0,0,.25); }
+  .card h1 { margin: 0 0 6px; font-size: 34px; letter-spacing: -1px; line-height: 1.05; }
+  .card h1 span { color: var(--red); }
+  .card p { margin: 8px 0; color: #4a4f66; font-size: 15px; line-height: 1.5; }
+  .big { font-size: 46px; font-weight: 900; letter-spacing: -1.5px; margin: 2px 0; }
+  .go { display: inline-block; margin-top: 12px; background: var(--red); color: #fff; font-weight: 800; padding: 12px 20px; border-radius: 14px; box-shadow: 0 4px 0 #b5492f; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="stat"><div id="floors">0<small>floors</small></div><div id="pop">🙂 0 residents</div></div>
+  <div class="right">
+    <div class="btns"><button class="btn" id="snd" title="Sound (M)">♪</button><a class="btn" href="../" title="Back to The Oven">⌂</a></div>
+    <div class="stat" id="best">BEST 0</div>
+    <div id="wind"></div>
+  </div>
+</div>
+<div id="ov" class="show"><div class="card" id="card"></div></div>
+
+<script>
+(() => {
+"use strict";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const isTouch = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+
+// ---------- canvas ----------
+const cv = $("#c"), ctx = cv.getContext("2d");
+let DPR = 1, VW = 0, VH = 0, S = 1;           // S = screen px per world unit
+function resize() {
+  DPR = Math.min(2, devicePixelRatio || 1); VW = innerWidth; VH = innerHeight;
+  cv.width = VW * DPR; cv.height = VH * DPR; cv.style.width = VW + "px"; cv.style.height = VH + "px";
+  S = Math.min(VW / 400, VH / 720);
+}
+addEventListener("resize", resize); resize();
+
+// ---------- audio ----------
+let AC = null, muted = store.get("sky.muted", false);
+function tone(f, dur, type = "sine", vol = 0.1, slide = 0, delay = 0) {
+  if (muted) return;
+  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  if (AC.state === "suspended") AC.resume();
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f * slide), t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+function noise(dur, vol = 0.15, freq = 600) {
+  if (muted || !AC) return;
+  const b = AC.createBuffer(1, AC.sampleRate * dur, AC.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  const s = AC.createBufferSource(), f = AC.createBiquadFilter(), g = AC.createGain();
+  s.buffer = b; f.type = "lowpass"; f.frequency.value = freq; g.gain.value = vol;
+  s.connect(f).connect(g).connect(AC.destination); s.start();
+}
+const sfx = {
+  drop() { tone(520, 0.12, "triangle", 0.06, 0.6); },
+  thud(q) { tone(110, 0.18, "sine", 0.18, 0.6); noise(0.12, 0.08 + q * 0.1, 400); },
+  perfect(n) { const b = 523 * Math.pow(2, Math.min(n - 1, 12) / 12); tone(b, 0.12, "triangle", 0.09); tone(b * 1.5, 0.18, "triangle", 0.08, 0, 0.07); },
+  crash() { noise(1.2, 0.3, 500); tone(80, 0.8, "sine", 0.2, 0.4); },
+  whoosh() { noise(0.6, 0.05, 1500); },
+  ok() { tone(880, 0.06, "triangle", 0.06); },
+};
+const sndBtn = $("#snd");
+function syncSnd() { sndBtn.textContent = muted ? "×" : "♪"; sndBtn.style.opacity = muted ? 0.6 : 1; }
+function toggleSnd() { muted = !muted; store.set("sky.muted", muted); syncSnd(); if (!muted) sfx.ok(); }
+syncSnd(); sndBtn.addEventListener("pointerdown", (e) => { e.stopPropagation(); }); sndBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleSnd(); });
+
+// ---------- game ----------
+// World units: y grows UP from the ground. Each floor is BW x BH.
+const BW = 110, BH = 56, ROPE = 190, PERFECT = 7;
+const PALETTES = [
+  ["#e76f51", "#c4553a"], ["#2a9d8f", "#1f7a6f"], ["#e9c46a", "#c9a24a"], ["#8d6cd9", "#6c4fb5"],
+  ["#4ea8de", "#3784b5"], ["#f28482", "#d0605e"], ["#90be6d", "#6f9c4e"], ["#f4a261", "#d1803f"],
+];
+const SKIN = ["#ffdbac", "#f1c27d", "#e0ac69", "#c68642", "#8d5524"];
+let blocks, hang, fall, falling, state = "title", stateT = 0, clock = 0;
+let swayAmp, combo, pop, camTop, camX, theta0, swingT, topple, popups, spawnT, wind = 0, windDir = 1;
+let toppled = false; let best = store.get("sky.best", 0), bestPop = store.get("sky.bestPop", 0), newBest = false;
+
+function newGame() {
+  blocks = [{ x: 0, foundation: true, res: [] }];
+  swayAmp = 0; combo = 0; pop = 0; camX = 0; swingT = 0; theta0 = 0; topple = null; popups = []; fall = null; falling = false;
+  newBest = false; spawnT = 0; wind = 0; toppled = false;
+  camTop = topY() + 0.62 * VH / S;
+  setState("play"); hideCard(); updateHud();
+}
+function setState(s) { state = s; stateT = 0; }
+const floors = () => blocks.length - 1;
+const topY = () => blocks.length * BH;
+function swayOffset(i, n = blocks.length) { if (i === 0) return 0; return swayAmp * Math.pow(i / Math.max(1, n - 1), 1.4) * Math.sin(clock * 2.4); }
+function blockX(i) { return blocks[i].x + swayOffset(i); }
+
+// pendulum (period shrinks and amplitude grows with height; wind biases it)
+function swing() {
+  const n = floors(), period = Math.max(1.25, 2.2 - n * 0.018), amp = Math.min(0.75, 0.5 + n * 0.006);
+  return { th: amp * Math.sin(swingT * Math.PI * 2 / period) + wind, period };
+}
+function pivot() { return { x: camX, y: camTop + 26 / S }; }
+function hangPos() {
+  const p = pivot(), th = swing().th;
+  return { x: p.x + Math.sin(th) * ROPE, y: p.y - Math.cos(th) * ROPE - BH / 2, th };  // y = block bottom
+}
+
+function drop() {
+  if (state !== "play" || falling || spawnT > 0) return;
+  const h = hangPos();
+  fall = { x: h.x, y: h.y, vy: 0, color: PALETTES[Math.floor(floors() / 8) % PALETTES.length], rot: 0 };
+  falling = true; sfx.drop();
+}
+
+function land() {
+  const n = blocks.length, top = n - 1;
+  const tx = blockX(top), dx = fall.x - tx, adx = Math.abs(dx);
+  if (adx >= BW * 0.98) { setState("missing"); return; }          // clean miss: keep falling
+  let restX = fall.x - swayOffset(n, n + 1);
+  const perfect = adx < PERFECT;
+  if (perfect) { restX = blocks[top].x; combo++; swayAmp *= combo >= 3 ? 0.45 : 0.7; sfx.perfect(combo); }
+  else { combo = 0; swayAmp = Math.min(46, swayAmp + adx * 0.22); }
+  const q = perfect ? 3 : adx < BW * 0.22 ? 2 : 1;
+  const res = [];
+  const slots = [0, 1, 2].sort(() => Math.random() - 0.5).slice(0, q);
+  for (const s of slots) res.push({ slot: s, skin: SKIN[(Math.random() * SKIN.length) | 0], t: clock + Math.random() * 0.4 });
+  blocks.push({ x: restX, color: fall.color, res });
+  pop += q;
+  sfx.thud(adx / BW);
+  if (perfect) popups.push({ text: combo > 1 ? `PERFECT ×${combo}` : "PERFECT", x: restX, y: topY(), t: 0, big: combo > 2 });
+  fall = null; falling = false; spawnT = 0.35;
+
+  // topple check: centre of mass of everything above each floor must sit on that floor
+  for (let i = 0; i < blocks.length - 1; i++) {
+    let sum = 0, cnt = 0;
+    for (let j = i + 1; j < blocks.length; j++) { sum += blocks[j].x; cnt++; }
+    const com = sum / cnt, edge = blocks[i].foundation ? BW * 0.65 : BW / 2;
+    if (Math.abs(com - blocks[i].x) > edge) {
+      const dir = Math.sign(com - blocks[i].x);
+      topple = { from: i + 1, px: blocks[i].x + dir * edge, py: (i + 1) * BH, ang: 0, av: 0, dir, drop: 0, vy: 0 };
+      sfx.crash(); setState("toppling"); return;
+    }
+  }
+  updateHud();
+}
+
+function finish() {
+  if (topple) { // floors that fell off don't count, and neither do their residents
+    for (let i = topple.from; i < blocks.length; i++) pop -= blocks[i].res.length;
+    blocks.length = topple.from; topple = null; toppled = true;
+  }
+  if (floors() > best) { best = floors(); newBest = true; store.set("sky.best", best); }
+  if (pop > bestPop) { bestPop = pop; store.set("sky.bestPop", bestPop); }
+  setState("over"); updateHud();
+  showCard(`<h1>${toppled ? "TIMBER<span>!</span>" : "MISSED<span>!</span>"}</h1>
+    <p>Your tower reached</p><div class="big">${floors()} floors</div>
+    <p>🙂 ${pop} residents moved in</p>
+    <p>${newBest ? "<b>New best tower!</b>" : "Best: " + best + " floors"}</p>
+    <span class="go">${isTouch ? "Tap" : "Space"} to build again</span>`);
+}
+
+function update(dt) {
+  clock += dt; stateT += dt;
+  for (const p of popups) p.t += dt;
+  popups = popups.filter((p) => p.t < 1.2);
+  if (!blocks) return;
+  const n = floors();
+  // wind kicks in above floor 10
+  const ws = clamp((n - 10) / 30, 0, 1) * 0.32;
+  const target = ws * Math.sin(clock * 0.35) * (0.6 + 0.4 * Math.sin(clock * 1.3 + 2));
+  const prev = wind; wind += (target - wind) * Math.min(1, dt * 1.5);
+  if (ws > 0 && Math.sign(wind) !== Math.sign(prev) && Math.abs(target) > 0.1) sfx.whoosh();
+  if (state === "play") {
+    swingT += dt; spawnT = Math.max(0, spawnT - dt);
+    swayAmp = Math.max(0, swayAmp - dt * 0.6);
+    if (fall) {
+      fall.vy -= 2200 * dt; fall.y += fall.vy * dt;
+      if (fall.y <= topY()) { fall.y = topY(); land(); }
+    }
+  } else if (state === "missing") {
+    fall.vy -= 2200 * dt; fall.y += fall.vy * dt; fall.rot += dt * 2 * Math.sign(fall.x - blockX(floors()) || 1);
+    if (stateT > 1.1) finish();
+  } else if (state === "toppling") {
+    const t = topple; t.av += 5 * dt; t.ang += t.av * dt;
+    if (t.ang > 0.9) { t.vy -= 1800 * dt; t.drop += t.vy * dt; }
+    if (stateT > 1.8) finish();
+  }
+  // camera
+  const wantTop = topY() + 0.62 * VH / S;
+  camTop += (wantTop - camTop) * Math.min(1, dt * 3);
+  const wantX = blocks[blocks.length - 1].x * 0.7;
+  camX += (wantX - camX) * Math.min(1, dt * 2);
+  ui.wind.textContent = Math.abs(wind) > 0.04 ? (wind > 0 ? "WIND " + "›".repeat(Math.ceil(Math.abs(wind) * 12)) : "‹".repeat(Math.ceil(Math.abs(wind) * 12)) + " WIND") : "";
+}
+
+// ---------- HUD ----------
+const ui = { floors: $("#floors"), pop: $("#pop"), best: $("#best"), wind: $("#wind"), ov: $("#ov"), card: $("#card") };
+function updateHud() {
+  ui.floors.innerHTML = (blocks ? floors() : 0) + "<small>floors</small>";
+  ui.pop.textContent = `🙂 ${pop || 0} residents`;
+  ui.best.textContent = "BEST " + best;
+}
+function showCard(h) { ui.card.innerHTML = h; ui.ov.classList.add("show"); }
+function hideCard() { ui.ov.classList.remove("show"); }
+function showTitle() {
+  setState("title");
+  showCard(`<h1>SKY <span>STACKER</span></h1>
+    <p>The crane swings. ${isTouch ? "Tap" : "Press Space"} to drop the floor.</p>
+    <p>Land it dead centre for a <b>PERFECT</b>. Chain them to steady the tower. Sloppy drops make it sway, and above floor 10 the wind joins in.</p>
+    <p>Miss once, or let it lean too far, and down it comes.</p>
+    <span class="go">${isTouch ? "Tap to build" : "Space to build"}</span>`);
+}
+
+// ---------- render ----------
+const SKY = [
+  [0, "#8ecae6", "#d8f3ff"], [30, "#ffb4a2", "#ffe5d9"], [55, "#6d597a", "#eaac8b"], [80, "#14213d", "#3a5a8c"], [120, "#05060f", "#1b1f3b"],
+];
+function hex(h) { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }
+function mixc(a, b, t) { const A = hex(a), B = hex(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], t))).join(",")})`; }
+function skyAt(f) {
+  for (let i = 0; i < SKY.length - 1; i++) {
+    const [f0, a0, b0] = SKY[i], [f1, a1, b1] = SKY[i + 1];
+    if (f <= f1) { const t = clamp((f - f0) / (f1 - f0), 0, 1); return [mixc(a0, a1, t), mixc(b0, b1, t), t, i]; }
+  }
+  return [SKY[SKY.length - 1][1], SKY[SKY.length - 1][2], 1, SKY.length - 1];
+}
+const sx = (x) => VW / 2 + (x - camX) * S, sy = (y) => (camTop - y) * S;
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+function drawBlock(b, x, y, i) { // x = centre, y = bottom (world)
+  const X = sx(x - BW / 2), Y = sy(y + BH), W = BW * S, H = BH * S;
+  if (b.foundation) {
+    ctx.fillStyle = "#6c757d"; rr(X - W * 0.15, Y, W * 1.3, H, 6 * S); ctx.fill();
+    ctx.fillStyle = "#495057"; ctx.fillRect(X - W * 0.15, Y + H * 0.82, W * 1.3, H * 0.18);
+    ctx.fillStyle = "#3d2b1f"; rr(X + W * 0.4, Y + H * 0.35, W * 0.2, H * 0.65, 4 * S); ctx.fill();
+    ctx.fillStyle = "#ffd166"; ctx.beginPath(); ctx.arc(X + W * 0.56, Y + H * 0.7, 2 * S, 0, 7); ctx.fill();
+    return;
+  }
+  const [c, d] = b.color;
+  ctx.fillStyle = c; rr(X, Y, W, H, 5 * S); ctx.fill();
+  ctx.fillStyle = d; ctx.fillRect(X + 2 * S, Y + H - 9 * S, W - 4 * S, 7 * S);
+  ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fillRect(X + 3 * S, Y + 3 * S, W - 6 * S, 3 * S);
+  for (let k = 0; k < 3; k++) {
+    const wx = X + W * (0.12 + k * 0.29), wy = Y + H * 0.22, ww = W * 0.2, wh = H * 0.48;
+    const r = b.res && b.res.find((q) => q.slot === k);
+    ctx.fillStyle = r ? "#ffe8a3" : "#33415c"; rr(wx, wy, ww, wh, 3 * S); ctx.fill();
+    if (r) { // a tiny resident pops into the window
+      const p = clamp((clock - r.t) * 4, 0, 1), hx = wx + ww / 2, hy = wy + wh * (1.05 - 0.55 * p);
+      ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip();
+      ctx.fillStyle = r.skin; ctx.beginPath(); ctx.arc(hx, hy, ww * 0.32, 0, 7); ctx.fill();
+      ctx.fillStyle = "#1d2236"; const blink = (Math.sin(clock * 1.7 + i * 3 + k) > 0.97) ? 0.3 : 1;
+      ctx.fillRect(hx - ww * 0.14, hy - ww * 0.06, ww * 0.06, ww * 0.09 * blink); ctx.fillRect(hx + ww * 0.08, hy - ww * 0.06, ww * 0.06, ww * 0.09 * blink);
+      ctx.restore();
+    }
+    ctx.strokeStyle = d; ctx.lineWidth = Math.max(1, 1.5 * S); rr(wx, wy, ww, wh, 3 * S); ctx.stroke();
+  }
+}
+
+function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const viewFloor = Math.max(0, (camTop - VH / S * 0.5) / BH);
+  const [top, bot, , band] = skyAt(viewFloor);
+  const g = ctx.createLinearGradient(0, 0, 0, VH); g.addColorStop(0, top); g.addColorStop(1, bot);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, VW, VH);
+  // stars at night / space
+  const starA = clamp((viewFloor - 60) / 30, 0, 1);
+  if (starA > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${starA})`;
+    for (let i = 0; i < 70; i++) { const x = (i * 197.3) % VW, y = ((i * 131.7 - camTop * S * 0.1) % VH + VH) % VH; ctx.fillRect(x, y, (i % 3) + 1, (i % 3) + 1); }
+  }
+  // clouds (parallax), thin out in space
+  const cloudA = 1 - clamp((viewFloor - 70) / 30, 0, 1);
+  if (cloudA > 0) {
+    ctx.fillStyle = `rgba(255,255,255,${0.75 * cloudA})`;
+    for (let i = 0; i < 40; i++) {
+      const wy = 300 + i * 260, y = (camTop * 0.6 - wy) * S + VH * 0.2;
+      if (y < -80 || y > VH + 80) continue;
+      const x = ((i * 977 + clock * (10 + (i % 4) * 6) * (1 + Math.abs(wind) * 6) * (windDir)) % (VW + 300)) - 150;
+      cloud(x, y, (40 + (i % 3) * 18) * S);
+    }
+  }
+  // ground
+  const gy = sy(0);
+  if (gy < VH + 50) {
+    ctx.fillStyle = "#74c69d"; ctx.fillRect(0, gy, VW, VH - gy + 10);
+    ctx.fillStyle = "#52b788"; ctx.fillRect(0, gy, VW, 8 * S);
+    for (let i = -6; i <= 6; i++) { if (Math.abs(i) < 2) continue; tree(sx(i * 70 + (i % 2) * 20), gy, (30 + (Math.abs(i) % 3) * 8) * S); }
+  }
+  if (!blocks) return;
+
+  // tower (with the toppling chunk rotating about its pivot)
+  for (let i = 0; i < blocks.length; i++) {
+    const b = blocks[i];
+    if (topple && i >= topple.from) continue;
+    drawBlock(b, blockX(i), i * BH, i);
+  }
+  if (topple) {
+    ctx.save();
+    ctx.translate(sx(topple.px), sy(topple.py + topple.drop)); ctx.rotate(topple.ang * topple.dir); ctx.translate(-sx(topple.px), -sy(topple.py));
+    for (let i = topple.from; i < blocks.length; i++) drawBlock(blocks[i], blockX(i), i * BH, i);
+    ctx.restore();
+  }
+
+  // crane rope + hanging block
+  if (state === "play" || state === "title") {
+    const p = pivot();
+    if (!falling) {
+      const h = hangPos(), lower = spawnT > 0 ? (spawnT / 0.35) * 80 : 0;
+      const bx = h.x, by = h.y + lower;
+      ctx.strokeStyle = "#1d2236"; ctx.lineWidth = Math.max(2, 2.5 * S);
+      ctx.beginPath(); ctx.moveTo(sx(p.x), sy(p.y) - 40); ctx.lineTo(sx(bx), sy(by + BH) - 8 * S); ctx.stroke();
+      ctx.fillStyle = "#1d2236"; ctx.fillRect(sx(bx) - 10 * S, sy(by + BH) - 9 * S, 20 * S, 6 * S);
+      if (blocks.length) drawBlock({ color: PALETTES[Math.floor(floors() / 8) % PALETTES.length], res: [] }, bx, by, -1);
+      // drop guide
+      ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.setLineDash([4 * S, 6 * S]); ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(sx(bx), sy(by)); ctx.lineTo(sx(bx), sy(topY())); ctx.stroke(); ctx.setLineDash([]);
+    } else {
+      ctx.strokeStyle = "#1d2236"; ctx.lineWidth = Math.max(2, 2.5 * S);
+      const h = hangPos(); ctx.beginPath(); ctx.moveTo(sx(p.x), sy(p.y) - 40); ctx.lineTo(sx(h.x), sy(h.y + BH)); ctx.stroke();
+    }
+  }
+  if (fall) {
+    ctx.save(); ctx.translate(sx(fall.x), sy(fall.y + BH / 2)); ctx.rotate(fall.rot); ctx.translate(-sx(fall.x), -sy(fall.y + BH / 2));
+    drawBlock({ color: fall.color, res: [] }, fall.x, fall.y, -1); ctx.restore();
+  }
+  // popups
+  for (const p of popups) {
+    const a = 1 - p.t / 1.2; ctx.globalAlpha = a; ctx.textAlign = "center";
+    ctx.font = `900 ${Math.round((p.big ? 26 : 20) * Math.max(0.8, S))}px system-ui`;
+    ctx.fillStyle = "#1d2236"; ctx.fillText(p.text, sx(p.x) + 2, sy(p.y) - 30 * S - p.t * 40 + 2);
+    ctx.fillStyle = p.big ? "#ffb703" : "#fff"; ctx.fillText(p.text, sx(p.x), sy(p.y) - 30 * S - p.t * 40);
+    ctx.globalAlpha = 1; ctx.textAlign = "start";
+  }
+}
+function cloud(x, y, r) { ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.arc(x + r * 0.9, y + r * 0.15, r * 0.75, 0, 7); ctx.arc(x - r * 0.9, y + r * 0.2, r * 0.65, 0, 7); ctx.fill(); }
+function tree(x, gy, h) { ctx.fillStyle = "#6b4f3a"; ctx.fillRect(x - h * 0.06, gy - h * 0.45, h * 0.12, h * 0.45); ctx.fillStyle = "#2d6a4f"; ctx.beginPath(); ctx.arc(x, gy - h * 0.6, h * 0.35, 0, 7); ctx.fill(); }
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.033, (now - last) / 1000); last = now;
+  update(dt); render(); requestAnimationFrame(frame);
+}
+// a little demo tower behind the title card
+blocks = [{ x: 0, foundation: true, res: [] }]; swayAmp = 0; camX = 0; swingT = 0; pop = 0; popups = []; camTop = topY() + 0.62 * VH / S;
+updateHud(); showTitle(); requestAnimationFrame(frame);
+
+// ---------- input ----------
+function act() {
+  if (state === "title" || (state === "over" && stateT > 0.6)) { sfx.ok(); newGame(); return; }
+  if (state === "paused") { setState("play"); hideCard(); return; }
+  drop();
+}
+addEventListener("keydown", (e) => {
+  if (e.code === "Space" || e.code === "Enter" || e.code === "ArrowDown") { e.preventDefault(); if (!e.repeat) act(); }
+  if (e.code === "KeyM") toggleSnd();
+  if ((e.code === "KeyP" || e.code === "Escape") && state === "play" && !falling) { setState("paused"); showCard(`<h1>PAUSED</h1><span class="go">${isTouch ? "Tap" : "Space"} to continue</span>`); }
+});
+addEventListener("pointerdown", (e) => { if (e.target.closest(".btns")) return; e.preventDefault(); act(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden && state === "play" && !falling) { setState("paused"); showCard(`<h1>PAUSED</h1><span class="go">${isTouch ? "Tap" : "Space"} to continue</span>`); } });
+
+if (location.search.includes("debug")) window.__sky = {
+  get: () => ({ state, floors: floors(), pop, swayAmp: +swayAmp.toFixed(1), combo, wind: +wind.toFixed(2), falling }),
+  hang: () => hangPos(), top: () => blockX(blocks.length - 1), drop, act,
+  build: (n, jitter = 0) => { for (let i = 0; i < n; i++) { const top = blocks[blocks.length - 1].x; blocks.push({ x: top + (Math.random() - 0.5) * jitter, color: PALETTES[Math.floor(floors() / 8) % PALETTES.length], res: [{ slot: 1, skin: SKIN[i % 5], t: 0 }] }); pop++; } updateHud(); },
+};
+})();
+</script>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

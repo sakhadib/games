@@ -14,6 +14,7 @@ Every game is a single self-contained HTML file. No installs, no build step, no 
 | [Pocket Snake](https://sakhadib.github.io/games/pocket-snake/) | 2D arcade | Classic snake on a little black-and-white phone screen. Eat dots, chase the runaway mouse, and don't bite yourself. |
 | [Pocket Strike](https://sakhadib.github.io/games/pocket-strike/) | 2D shooter | A side-scrolling space shooter on a monochrome LCD. Saucers, asteroids, power-ups, and a boss at the end of every stage. |
 | [Pocket Bounce](https://sakhadib.github.io/games/pocket-bounce/) | 2D platformer | An endless bouncing-ball runner. The road builds itself as you go; shrink to squeeze through tunnels, grow to float and smash walls. |
+| [Sky Stacker](https://sakhadib.github.io/games/sky-stacker/) | 2D arcade | Time the swinging crane and drop each floor. Chain perfect drops, fight the wind, and fill your tower with tiny residents. |
 
 ## How it works
 
