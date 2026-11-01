@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Coop Catch · catch the falling eggs | The Oven</title>
+<meta name="description" content="A free, cute egg catching game in your browser. Hens on a rail lay eggs; run with your basket to catch them, dodge rotten eggs, and grab booster eggs. Five lives, endless, no ads, works on mobile.">
+<meta name="keywords" content="egg catching game, catch the egg, chicken egg game, basket game, kids game, childhood pc game, browser game, no ads">
+<meta name="author" content="Sakhawat Adib">
+<link rel="canonical" href="https://sakhadib.github.io/games/coop-catch/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Oven">
+<meta property="og:title" content="Coop Catch · The Oven">
+<meta property="og:description" content="Hens lay, you catch. Dodge the rotten ones, grab the boosters. Five lives, no ads.">
+<meta property="og:url" content="https://sakhadib.github.io/games/coop-catch/">
+<meta property="og:image" content="https://sakhadib.github.io/games/assets/shots/coop-catch.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sakhadib.github.io/games/assets/shots/coop-catch.jpg">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Coop Catch","url":"https://sakhadib.github.io/games/coop-catch/","description":"A cute egg catching game. Hens on a rail lay eggs; run with your basket to catch them, dodge rotten eggs, and grab booster eggs. Five lives, endless.","image":"https://sakhadib.github.io/games/assets/shots/coop-catch.jpg","genre":["Arcade","Casual"],"gamePlatform":["Web browser","Mobile","Desktop"],"applicationCategory":"Game","operatingSystem":"Any","playMode":"SinglePlayer","isAccessibleForFree":true,"inLanguage":"en","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Sakhawat Adib","url":"https://portfolio.sakhawatadib.com"},"isPartOf":{"@type":"WebSite","name":"The Oven","url":"https://sakhadib.github.io/games/"}}</script>
+<meta name="theme-color" content="#bfe3f2">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='4' fill='%23bfe3f2'/><ellipse cx='8' cy='7' rx='3.2' ry='4' fill='%23fff8ec'/><path d='M3 11h10l-1.5 4h-7z' fill='%23c98b4e'/></svg>">
+<style>
+  :root { --ink: #3b3140; --muted: #7a6f7e; --accent: #ff8f6b; --paper: #fffaf3; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #bfe3f2; }
+  body { font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; display: block; }
+  #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 16px; pointer-events: none; z-index: 3; }
+  .pill { background: rgba(255,250,243,.82); border-radius: 16px; padding: 8px 12px; box-shadow: 0 2px 0 rgba(59,49,64,.08); }
+  #score { font-size: 26px; font-weight: 800; line-height: 1; letter-spacing: -0.5px; }
+  #streak { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 3px; min-height: 14px; }
+  #lives { display: flex; gap: 3px; margin-top: 6px; }
+  #lives i { width: 13px; height: 16px; border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%; background: #fff3dc; box-shadow: inset 0 0 0 1.5px #e9c99b; display: inline-block; }
+  #lives i.off { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(59,49,64,.18); }
+  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .btns { display: flex; gap: 6px; pointer-events: auto; }
+  .btn { font: 700 13px system-ui; color: var(--ink); background: rgba(255,250,243,.82); border: 0; border-radius: 12px; padding: 8px 11px; cursor: pointer; text-decoration: none; line-height: 1; }
+  #best { font-size: 12px; font-weight: 700; color: var(--muted); }
+  #fx { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  #fx span { font-size: 12px; font-weight: 800; background: rgba(255,250,243,.88); border-radius: 999px; padding: 4px 10px; }
+  #ov { position: fixed; inset: 0; display: none; place-items: center; z-index: 10; padding: 16px; background: rgba(59,49,64,.18); backdrop-filter: blur(3px); }
+  #ov.show { display: grid; }
+  .card { width: 100%; max-width: 370px; background: var(--paper); border-radius: 28px; padding: 26px 24px; text-align: center; box-shadow: 0 20px 50px rgba(59,49,64,.2); }
+  .card h1 { margin: 0 0 6px; font-size: 34px; font-weight: 800; letter-spacing: -1px; line-height: 1.05; }
+  .card h1 span { color: var(--accent); }
+  .card p { margin: 8px 0; color: #6f6574; font-size: 14.5px; line-height: 1.55; }
+  .legend { display: grid; grid-template-columns: 30px 1fr; gap: 8px 10px; text-align: left; margin: 14px 0; font-size: 13.5px; color: #6f6574; align-items: center; }
+  .egg { width: 18px; height: 23px; border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%; justify-self: center; }
+  .big { font-size: 50px; font-weight: 800; letter-spacing: -1.5px; margin: 0; }
+  .go { display: inline-block; margin-top: 14px; background: var(--accent); color: #fff; font-weight: 800; padding: 13px 22px; border-radius: 16px; box-shadow: 0 4px 0 #e0704e; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div class="pill"><div id="score">0</div><div id="streak"></div><div id="lives"></div></div>
+  <div class="right">
+    <div class="btns"><button class="btn" id="snd" title="Sound (M)">♪</button><a class="btn" href="../" title="Back to The Oven">⌂</a></div>
+    <div id="best">BEST 0</div>
+    <div id="fx"></div>
+  </div>
+</div>
+<div id="ov" class="show"><div class="card" id="card"></div></div>
+
+<script>
+(() => {
+"use strict";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const isTouch = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = (a) => a[(Math.random() * a.length) | 0];
+
+// ---------- canvas: height-driven world, width adapts (400..720 units) ----------
+const cv = $("#c"), ctx = cv.getContext("2d");
+let DPR = 1, VW = 0, VH = 0, S = 1, FW = 400, FH = 640, OX = 0, RAIL = 120, GROUND = 560;
+function resize() {
+  DPR = Math.min(1.5, devicePixelRatio || 1); VW = innerWidth; VH = innerHeight;
+  cv.width = VW * DPR; cv.height = VH * DPR; cv.style.width = VW + "px"; cv.style.height = VH + "px";
+  S = Math.min(VH / 560, VW / 380); FW = clamp(VW / S, 380, 640); FH = VH / S; OX = (VW - FW * S) / 2;
+  RAIL = Math.max(112, FH * 0.2); GROUND = FH - Math.max(64, FH * 0.11);
+  backdrop = null;
+  if (hens) layoutHens();
+}
+addEventListener("resize", resize);
+
+// ---------- sounds ----------
+let AC = null, muted = store.get("cc.muted", false);
+function tone(f, dur, type = "sine", vol = 0.08, slide = 0, delay = 0) {
+  if (muted) return;
+  try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  if (AC.state === "suspended") AC.resume();
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, f * slide), t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(AC.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+const sfx = {
+  cluck() { const b = rnd(520, 700); tone(b, 0.07, "triangle", 0.04, 0.7); tone(b * 1.15, 0.08, "triangle", 0.035, 0.6, 0.09); },
+  bawk() { tone(780, 0.16, "triangle", 0.05, 0.55); tone(560, 0.12, "triangle", 0.04, 0.8, 0.13); },
+  lay() { tone(300, 0.08, "sine", 0.06, 1.6); },
+  catch(n) { tone(660 * Math.pow(2, Math.min(n, 14) / 24), 0.09, "sine", 0.07); tone(990 * Math.pow(2, Math.min(n, 14) / 24), 0.12, "sine", 0.04, 0, 0.05); },
+  crack() { tone(180, 0.12, "triangle", 0.07, 0.5); tone(90, 0.12, "sine", 0.06, 0.6, 0.02); },
+  yuck() { tone(220, 0.3, "sawtooth", 0.04, 0.5); tone(160, 0.3, "triangle", 0.05, 0.6, 0.05); },
+  boost() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.12, "triangle", 0.06, 0, i * 0.06)); },
+  over() { [523, 440, 349, 262].forEach((f, i) => tone(f, 0.22, "triangle", 0.07, 0, i * 0.18)); },
+  ok() { tone(880, 0.08, "triangle", 0.06); },
+};
+const sndBtn = $("#snd");
+function syncSnd() { sndBtn.textContent = muted ? "×" : "♪"; sndBtn.style.opacity = muted ? 0.5 : 1; }
+function toggleSnd() { muted = !muted; store.set("cc.muted", muted); syncSnd(); if (!muted) sfx.ok(); }
+syncSnd(); sndBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleSnd(); });
+
+// ---------- state ----------
+const BOOSTS = {
+  speed:  { name: "Speedy feet", icon: "⚡", col: "#ffd166", dur: 8 },
+  wide:   { name: "Big basket",  icon: "⬌", col: "#8ecae6", dur: 10 },
+  magnet: { name: "Egg magnet",  icon: "◎", col: "#c3a6ff", dur: 8 },
+  slow:   { name: "Slow-mo",     icon: "◷", col: "#9be3b4", dur: 6 },
+  gold:   { name: "Golden egg",  icon: "★", col: "#ffbf3c", dur: 0 },
+  heart:  { name: "+1 life",     icon: "♥", col: "#ff9aa2", dur: 0 },
+};
+let state = "title", stateT = 0, clock = 0, t = 0;
+let girl, hens = null, eggs, splats, bits, floats, feathers, lives, score, streak, fx;
+let best = store.get("cc.best", 0), newBest = false;
+const keys = { l: false, r: false };
+let drag = null;
+
+function makeHen(i, n) {
+  return { x: 0, home: 0, tx: 0, dir: Math.random() < 0.5 ? -1 : 1, mode: "idle", modeT: rnd(0.5, 2), layT: rnd(1.5, 4), puff: 0,
+    peck: 0, flap: 0, blink: rnd(1, 4), look: 0, bob: Math.random() * 6, step: 0, cluckT: rnd(2, 6), bubble: 0, hue: pick(["#fff7ea", "#f6e3c8", "#e9b98a", "#fff7ea", "#d9a273"]) };
+}
+function layoutHens() { const n = hens.length; hens.forEach((h, i) => { h.home = FW * (i + 1) / (n + 1); if (!h.x) h.x = h.home; h.tx = h.home; }); }
+function newGame() {
+  girl = { x: FW / 2, vx: 0, step: 0, face: 1, blink: 2, squish: 0, yuck: 0, happy: 0 };
+  hens = []; for (let i = 0; i < 3; i++) hens.push(makeHen(i)); layoutHens();
+  eggs = []; splats = []; bits = []; floats = []; feathers = [];
+  lives = 5; score = 0; streak = 0; t = 0; newBest = false;
+  fx = { speed: 0, wide: 0, magnet: 0, slow: 0 };
+  setState("play"); hideCard(); updateHud();
+}
+function setState(s) { state = s; stateT = 0; }
+const mult = () => (streak >= 25 ? 3 : streak >= 10 ? 2 : 1);
+const basketHalf = () => (fx && fx.wide > 0 ? 44 : 29);
+const basketY = () => GROUND - 86;
+
+// ---------- hens: little lives of their own ----------
+function updateHen(h, dt, i) {
+  h.bob += dt * (h.mode === "walk" ? 9 : 2.5);
+  h.blink -= dt; if (h.blink < -0.12) h.blink = rnd(1.5, 4.5);
+  h.peck = Math.max(0, h.peck - dt * 3); h.flap = Math.max(0, h.flap - dt * 2.4); h.bubble = Math.max(0, h.bubble - dt);
+  h.cluckT -= dt; if (h.cluckT <= 0) { h.cluckT = rnd(3, 9); h.bubble = 0.8; if (state === "play" && Math.random() < 0.5) sfx.cluck(); }
+  // neighbours keep their distance
+  const left = i > 0 ? hens[i - 1].x + 46 : 26, right = i < hens.length - 1 ? hens[i + 1].x - 46 : FW - 26;
+  if (h.mode !== "lay") {
+    h.modeT -= dt;
+    if (h.modeT <= 0) {
+      const r = Math.random();
+      if (r < 0.4) { h.mode = "walk"; h.tx = clamp(h.home + rnd(-60, 60), left, right); h.modeT = rnd(1, 2.5); }
+      else if (r < 0.62) { h.mode = "idle"; h.peck = 1; h.modeT = rnd(0.6, 1.4); }
+      else if (r < 0.75) { h.mode = "idle"; h.flap = 1; h.modeT = rnd(0.6, 1.2); if (Math.random() < 0.5) feathers.push({ x: h.x, y: RAIL - 18, vx: rnd(-20, 20), vy: rnd(-10, 5), r: 0, life: 3 }); }
+      else { h.mode = "idle"; h.look = rnd(-1, 1); h.modeT = rnd(0.8, 2); }
+    }
+    if (h.mode === "walk") {
+      const d = h.tx - h.x; if (Math.abs(d) < 2) { h.mode = "idle"; h.modeT = rnd(0.4, 1.4); }
+      else { h.dir = Math.sign(d); h.x += h.dir * Math.min(Math.abs(d), 34 * dt); h.step += dt * 10; }
+    }
+    h.x = clamp(h.x, left, right);
+  }
+  // laying: settle, fluff up, wiggle, cluck, pop!
+  h.layT -= dt * (state === "play" ? 1 : 0);
+  if (h.layT <= 0 && h.mode !== "lay") { h.mode = "lay"; h.modeT = 0.75; h.puff = 0; }
+  if (h.mode === "lay") {
+    h.puff = Math.min(1, h.puff + dt * 2.2); h.modeT -= dt;
+    if (h.modeT <= 0) {
+      layEgg(h); h.mode = "idle"; h.modeT = rnd(0.4, 1); h.puff = 0; h.flap = 0.6; h.bubble = 0.6;
+      h.layT = Math.max(1.2, rnd(3.2, 6.5) - t * 0.018) * (0.8 + hens.length * 0.07);
+    }
+  }
+}
+function layEgg(h) {
+  const rot = Math.min(0.26, 0.07 + t * 0.0012), boost = Math.min(0.1, 0.05 + t * 0.0003);
+  const r = Math.random();
+  let type = "egg", kind = null;
+  if (t > 6 && r < rot) type = "rotten";
+  else if (t > 4 && r < rot + boost) { type = "boost"; kind = pick(lives < 5 ? ["speed", "wide", "magnet", "slow", "gold", "gold", "heart"] : ["speed", "wide", "magnet", "slow", "gold", "gold"]); }
+  eggs.push({ x: h.x, y: RAIL + 6, vy: 30, type, kind, rot: rnd(-0.3, 0.3), spin: rnd(-2, 2), wob: Math.random() * 6 });
+  sfx.lay(); if (Math.random() < 0.35) sfx.bawk();
+}
+
+// ---------- main update ----------
+function update(rawDt) {
+  clock += rawDt; stateT += rawDt;
+  const dt = rawDt * (fx && fx.slow > 0 ? 0.55 : 1);
+  for (const b of bits) { b.vy += 500 * rawDt; b.x += b.vx * rawDt; b.y += b.vy * rawDt; b.life -= rawDt; } bits = bits.filter((b) => b.life > 0);
+  for (const f of floats) f.t += rawDt; floats = floats.filter((f) => f.t < 1.1);
+  for (const s of splats) s.life -= rawDt; splats = splats.filter((s) => s.life > 0);
+  if (feathers) { for (const f of feathers) { f.vy += 14 * rawDt; f.vy = Math.min(f.vy, 22); f.x += (f.vx + Math.sin(clock * 3 + f.life) * 20) * rawDt; f.y += f.vy * rawDt; f.r += rawDt * 2; f.life -= rawDt; } feathers = feathers.filter((f) => f.life > 0 && f.y < GROUND); }
+  if (hens) hens.forEach((h, i) => updateHen(h, rawDt * (fx && fx.slow > 0 ? 0.7 : 1), i));
+  if (state !== "play") return;
+  t += rawDt;
+  for (const k in fx) fx[k] = Math.max(0, fx[k] - rawDt);
+  // more hens join over time
+  const want = Math.min(7, 3 + Math.floor(t / 35));
+  if (hens.length < want) { const h = makeHen(); h.layT = rnd(2, 4); hens.push(h); hens.sort((a, b) => a.x - b.x); layoutHens(); floats.push({ x: FW / 2, y: RAIL + 50, text: "A new hen joined!", t: 0 }); sfx.bawk(); }
+
+  // girl: smooth keyboard or finger-follow
+  const maxV = 300 * (fx.speed > 0 ? 1.6 : 1);
+  if (drag) { const want = clamp((drag.target - girl.x) * 12, -maxV * 1.2, maxV * 1.2); girl.vx += (want - girl.vx) * Math.min(1, rawDt * 16); }
+  else { const d = (keys.r ? 1 : 0) - (keys.l ? 1 : 0); girl.vx += (d * maxV - girl.vx) * Math.min(1, rawDt * (d ? 10 : 12)); }
+  girl.x = clamp(girl.x + girl.vx * rawDt, 30, FW - 30);
+  if (Math.abs(girl.vx) > 15) { girl.step += rawDt * Math.abs(girl.vx) / 22; girl.face = Math.sign(girl.vx); }
+  girl.blink -= rawDt; if (girl.blink < -0.12) girl.blink = rnd(2, 5);
+  girl.squish = Math.max(0, girl.squish - rawDt * 4); girl.yuck = Math.max(0, girl.yuck - rawDt); girl.happy = Math.max(0, girl.happy - rawDt);
+
+  // eggs
+  const vmax = Math.min(330, 150 + t * 1.3), by = basketY(), half = basketHalf();
+  for (const e of eggs) {
+    e.vy = Math.min(vmax, e.vy + 260 * dt); e.y += e.vy * dt; e.rot += e.spin * dt; e.wob += dt * 6;
+    if (fx.magnet > 0 && e.type !== "rotten" && e.y > RAIL + 40) e.x += clamp(girl.x - e.x, -1, 1) * Math.min(Math.abs(girl.x - e.x), 220 * dt);
+    if (!e.done && e.y + 10 >= by && e.y - 10 <= by + 14 && Math.abs(e.x - girl.x) <= half) { e.done = true; catchEgg(e); }
+    else if (!e.done && e.y + 11 >= GROUND) { e.done = true; dropEgg(e); }
+  }
+  eggs = eggs.filter((e) => !e.done);
+  updateHud();
+}
+function catchEgg(e) {
+  girl.squish = 1;
+  if (e.type === "rotten") {
+    lives--; streak = 0; girl.yuck = 1.2; sfx.yuck(); floats.push({ x: girl.x, y: basketY() - 30, text: "Yuck! −1 life", t: 0, bad: true });
+    for (let i = 0; i < 12; i++) bits.push({ x: e.x, y: basketY(), vx: rnd(-90, 90), vy: rnd(-200, -60), life: rnd(0.4, 0.8), c: "#9bb26a" });
+    if (lives <= 0) gameOver();
+    return;
+  }
+  if (e.type === "boost") {
+    const B = BOOSTS[e.kind]; sfx.boost(); girl.happy = 1;
+    if (e.kind === "gold") { score += 50 * mult(); floats.push({ x: girl.x, y: basketY() - 30, text: "Golden! +" + 50 * mult(), t: 0 }); }
+    else if (e.kind === "heart") { lives = Math.min(5, lives + 1); floats.push({ x: girl.x, y: basketY() - 30, text: "+1 life", t: 0 }); }
+    else { fx[e.kind] = B.dur; floats.push({ x: girl.x, y: basketY() - 30, text: B.name + "!", t: 0 }); }
+    for (let i = 0; i < 14; i++) bits.push({ x: e.x, y: basketY(), vx: rnd(-120, 120), vy: rnd(-260, -80), life: rnd(0.5, 0.9), c: B.col });
+    return;
+  }
+  streak++; const pts = 10 * mult(); score += pts; sfx.catch(streak);
+  if (streak === 10 || streak === 25) { floats.push({ x: girl.x, y: basketY() - 44, text: `Streak! ×${mult()}`, t: 0 }); girl.happy = 1; }
+}
+function dropEgg(e) {
+  if (e.type === "rotten") { splats.push({ x: e.x, rotten: true, life: 2.5 }); sfx.crack(); return; }      // good riddance
+  if (e.type === "boost") { splats.push({ x: e.x, col: BOOSTS[e.kind].col, life: 1.6 }); return; }       // missed boosters cost nothing
+  lives--; streak = 0; sfx.crack(); splats.push({ x: e.x, life: 4 });
+  for (let i = 0; i < 8; i++) bits.push({ x: e.x, y: GROUND - 4, vx: rnd(-80, 80), vy: rnd(-160, -40), life: rnd(0.3, 0.6), c: "#fff3dc" });
+  floats.push({ x: e.x, y: GROUND - 40, text: "−1", t: 0, bad: true });
+  if (lives <= 0) gameOver();
+}
+function gameOver() {
+  const nb = score > best; if (nb) { best = score; store.set("cc.best", best); newBest = true; }
+  setState("over"); sfx.over(); updateHud();
+  setTimeout(() => showCard(`<h1>Oh <span>no!</span></h1>
+    <p>The basket is empty for today.</p>
+    <p class="big">${score}</p>
+    <p>${newBest ? "<b>New best score!</b>" : "Best: " + best}</p>
+    <p>You played for ${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")} and met ${hens.length} hens.</p>
+    <span class="go">${isTouch ? "Tap" : "Space"} to play again</span>`), 700);
+}
+
+// ---------- HUD ----------
+const ui = { score: $("#score"), streak: $("#streak"), lives: $("#lives"), best: $("#best"), fx: $("#fx"), ov: $("#ov"), card: $("#card") };
+let lastFx = "", lastL = -1;
+function updateHud() {
+  ui.score.textContent = (score || 0).toLocaleString();
+  ui.streak.textContent = streak >= 3 ? `${streak} in a row${mult() > 1 ? " · ×" + mult() : ""}` : "";
+  if (lives !== lastL) { ui.lives.innerHTML = [0, 1, 2, 3, 4].map((i) => `<i class="${i < (lives ?? 5) ? "" : "off"}"></i>`).join(""); lastL = lives; }
+  ui.best.textContent = "BEST " + best;
+  let h = ""; if (fx) for (const k in fx) if (fx[k] > 0) h += `<span>${BOOSTS[k].icon} ${BOOSTS[k].name} ${Math.ceil(fx[k])}</span>`;
+  if (h !== lastFx) { ui.fx.innerHTML = h; lastFx = h; }
+}
+function showCard(h) { ui.card.innerHTML = h; ui.ov.classList.add("show"); }
+function hideCard() { ui.ov.classList.remove("show"); }
+function showTitle() {
+  setState("title");
+  showCard(`<h1>Coop <span>Catch</span></h1>
+    <p>The hens are laying. Catch every egg in your basket.</p>
+    <div class="legend">
+      <div class="egg" style="background:#fff7ea;box-shadow:inset 0 0 0 1.5px #e9c99b"></div><div>Catch it. Drop it and you lose a life.</div>
+      <div class="egg" style="background:#a8b878"></div><div>Rotten! Don't catch these, they cost a life.</div>
+      <div class="egg" style="background:linear-gradient(135deg,#ffd166,#c3a6ff)"></div><div>Booster eggs only ever help: speed, big basket, magnet, slow-mo, gold, extra life.</div>
+    </div>
+    <p>${isTouch ? "Drag anywhere to run." : "← → or A D to run."} Five lives.</p>
+    <span class="go">${isTouch ? "Tap" : "Space"} to start</span>`);
+}
+
+// ---------- render ----------
+const X = (x) => OX + x * S, Y = (y) => y * S;
+let backdrop = null;
+function buildBackdrop() {
+  const c = document.createElement("canvas"); c.width = Math.ceil(VW * DPR); c.height = Math.ceil(VH * DPR);
+  const b = c.getContext("2d"); b.scale(DPR, DPR);
+  const sky = b.createLinearGradient(0, 0, 0, VH); sky.addColorStop(0, "#bfe3f2"); sky.addColorStop(0.7, "#e6f4ea"); sky.addColorStop(1, "#f4f0dc");
+  b.fillStyle = sky; b.fillRect(0, 0, VW, VH);
+  // sun and soft clouds
+  b.fillStyle = "rgba(255,236,170,.9)"; b.beginPath(); b.arc(VW * 0.82, Y(RAIL) * 0.45 + 30, 34 * S, 0, 7); b.fill();
+  b.fillStyle = "rgba(255,255,255,.75)";
+  for (const [cx, cy, r] of [[0.15, 0.28, 26], [0.5, 0.2, 20], [0.68, 0.33, 30]]) { const x = VW * cx, y = Y(GROUND) * cy; b.beginPath(); b.arc(x, y, r * S, 0, 7); b.arc(x + r * S, y + 6 * S, r * 0.75 * S, 0, 7); b.arc(x - r * S, y + 8 * S, r * 0.6 * S, 0, 7); b.fill(); }
+  // hills, barn, fence
+  const gy = Y(GROUND);
+  b.fillStyle = "#cfe8c4"; b.beginPath(); b.moveTo(0, gy); for (let x = 0; x <= VW; x += 10) b.lineTo(x, gy - 70 * S - Math.sin(x / VW * 5) * 24 * S); b.lineTo(VW, gy); b.fill();
+  b.fillStyle = "#b7dcaa"; b.beginPath(); b.moveTo(0, gy); for (let x = 0; x <= VW; x += 10) b.lineTo(x, gy - 34 * S - Math.sin(x / VW * 8 + 1) * 14 * S); b.lineTo(VW, gy); b.fill();
+  const bx = OX + FW * S * 0.08, bw = 70 * S, bh = 52 * S;
+  b.fillStyle = "#e88d7a"; b.fillRect(bx, gy - bh - 30 * S, bw, bh); b.fillStyle = "#c96f5e"; b.beginPath(); b.moveTo(bx - 6 * S, gy - bh - 30 * S); b.lineTo(bx + bw / 2, gy - bh - 58 * S); b.lineTo(bx + bw + 6 * S, gy - bh - 30 * S); b.fill();
+  b.fillStyle = "#fff3e6"; b.fillRect(bx + bw * 0.35, gy - 30 * S - bh * 0.55, bw * 0.3, bh * 0.55);
+  b.fillStyle = "#e7d2b0"; for (let x = 0; x < VW; x += 26 * S) { b.fillRect(x, gy - 22 * S, 5 * S, 22 * S); } b.fillRect(0, gy - 17 * S, VW, 3 * S); b.fillRect(0, gy - 9 * S, VW, 3 * S);
+  // ground
+  b.fillStyle = "#a8d48e"; b.fillRect(0, gy, VW, VH - gy); b.fillStyle = "#93c47a"; b.fillRect(0, gy, VW, 5 * S);
+  b.fillStyle = "#c9e6b2"; for (let i = 0; i < 70; i++) b.fillRect(Math.random() * VW, gy + 10 * S + Math.random() * (VH - gy), 2 * S, 5 * S);
+  // the rail: a wooden beam strung between two posts
+  const ry = Y(RAIL);
+  b.fillStyle = "#b07a4a"; b.fillRect(OX + 6 * S, ry - 4 * S, 8 * S, gy - ry); b.fillRect(OX + FW * S - 14 * S, ry - 4 * S, 8 * S, gy - ry);
+  b.fillStyle = "#c98b4e"; b.fillRect(OX, ry, FW * S, 9 * S); b.fillStyle = "#a76d3a"; b.fillRect(OX, ry + 7 * S, FW * S, 3 * S);
+  b.fillStyle = "rgba(255,255,255,.25)"; b.fillRect(OX, ry + 1 * S, FW * S, 2 * S);
+  backdrop = c;
+}
+
+function egg(x, y, rot, type, kind, wob) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot + (type === "rotten" ? Math.sin(wob) * 0.12 : 0));
+  const rx = 8 * S, ry = 10.5 * S;
+  ctx.beginPath(); ctx.moveTo(0, -ry); ctx.bezierCurveTo(rx * 1.1, -ry, rx * 1.15, ry * 0.9, 0, ry); ctx.bezierCurveTo(-rx * 1.15, ry * 0.9, -rx * 1.1, -ry, 0, -ry);
+  if (type === "rotten") { ctx.fillStyle = "#a8b878"; ctx.fill(); ctx.fillStyle = "#7f8f55"; ctx.beginPath(); ctx.arc(-2 * S, 2 * S, 2 * S, 0, 7); ctx.arc(3 * S, -3 * S, 1.4 * S, 0, 7); ctx.fill(); }
+  else if (type === "boost") { const B = BOOSTS[kind]; ctx.fillStyle = B.col; ctx.fill(); ctx.strokeStyle = "rgba(255,255,255,.9)"; ctx.lineWidth = 2 * S; ctx.stroke(); ctx.fillStyle = "#fff"; ctx.font = `800 ${11 * S}px system-ui`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(B.icon, 0, 1 * S); }
+  else { ctx.fillStyle = "#fff7ea"; ctx.fill(); ctx.strokeStyle = "#ead2ad"; ctx.lineWidth = 1.2 * S; ctx.stroke(); ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.beginPath(); ctx.ellipse(-3 * S, -4 * S, 2 * S, 3 * S, -0.4, 0, 7); ctx.fill(); }
+  ctx.restore();
+  if (type === "rotten") { ctx.strokeStyle = "rgba(127,143,85,.6)"; ctx.lineWidth = 1.5 * S; for (let k = -1; k <= 1; k++) { ctx.beginPath(); const sx = x + k * 6 * S; ctx.moveTo(sx, y - 14 * S); ctx.quadraticCurveTo(sx + 4 * S * Math.sin(wob + k), y - 20 * S, sx, y - 26 * S); ctx.stroke(); } }
+  if (type === "boost") { ctx.globalAlpha = 0.35 + 0.25 * Math.sin(clock * 8); ctx.strokeStyle = BOOSTS[kind].col; ctx.lineWidth = 2 * S; ctx.beginPath(); ctx.arc(x, y, 16 * S, 0, 7); ctx.stroke(); ctx.globalAlpha = 1; }
+}
+
+function drawHen(h) {
+  const x = X(h.x), base = Y(RAIL) + 1 * S, s = S, d = h.dir;
+  const walk = h.mode === "walk", bob = walk ? Math.abs(Math.sin(h.bob)) * 2.5 * s : Math.sin(h.bob) * 0.8 * s;
+  const puff = h.mode === "lay" ? h.puff : 0, wig = h.mode === "lay" ? Math.sin(clock * 40) * 1.5 * s * puff : 0;
+  const bw = (17 + puff * 4) * s, bh = (13 + puff * 3) * s, by = base - bh - 2 * s - bob;
+  ctx.save(); ctx.translate(x + wig, 0);
+  // legs on the rail
+  ctx.strokeStyle = "#e8a13a"; ctx.lineWidth = 2 * s; ctx.lineCap = "round";
+  const l1 = walk ? Math.sin(h.step) * 3 * s : 0;
+  ctx.beginPath(); ctx.moveTo(-4 * s, by + bh * 1.6); ctx.lineTo(-4 * s + l1, base); ctx.moveTo(4 * s, by + bh * 1.6); ctx.lineTo(4 * s - l1, base); ctx.stroke();
+  // tail
+  ctx.fillStyle = h.hue === "#fff7ea" ? "#efe3cf" : "#c98a55";
+  ctx.beginPath(); ctx.moveTo(-d * bw * 0.8, by + bh * 0.6); ctx.lineTo(-d * (bw + 8 * s), by - 6 * s + Math.sin(h.bob * 1.3) * 2 * s); ctx.lineTo(-d * (bw * 0.6), by + bh * 0.1); ctx.fill();
+  // body
+  ctx.fillStyle = h.hue; ctx.beginPath(); ctx.ellipse(0, by + bh * 0.75, bw, bh, 0, 0, 7); ctx.fill();
+  // wing (flaps)
+  const fl = h.flap > 0 ? Math.sin(clock * 40) * 0.9 * h.flap : 0;
+  ctx.save(); ctx.translate(-d * 2 * s, by + bh * 0.6); ctx.rotate(-d * (0.15 + fl)); ctx.fillStyle = "rgba(0,0,0,.07)"; ctx.beginPath(); ctx.ellipse(0, 0, 10 * s, 6.5 * s, 0, 0, 7); ctx.fill(); ctx.restore();
+  // head: pecks down, looks around
+  const pk = h.peck > 0 ? Math.sin(h.peck * Math.PI) * 7 * s : 0, look = h.look * 0.25;
+  const hx = d * (bw * 0.75) + d * pk * 0.4, hy = by - 2 * s + pk;
+  ctx.fillStyle = h.hue; ctx.beginPath(); ctx.arc(hx, hy, 7.5 * s, 0, 7); ctx.fill();
+  ctx.fillStyle = "#ef5b5b"; ctx.beginPath(); ctx.arc(hx - d * 1 * s, hy - 7.5 * s, 2.4 * s, 0, 7); ctx.arc(hx + d * 2 * s, hy - 7 * s, 2.2 * s, 0, 7); ctx.fill();            // comb
+  ctx.beginPath(); ctx.ellipse(hx + d * 4.5 * s, hy + 4.5 * s, 1.8 * s, 2.6 * s, 0, 0, 7); ctx.fill();                                                                  // wattle
+  ctx.fillStyle = "#f0a53a"; ctx.beginPath(); ctx.moveTo(hx + d * 6.5 * s, hy - 1 * s); ctx.lineTo(hx + d * (11 + look * 4) * s, hy + 1 * s); ctx.lineTo(hx + d * 6.5 * s, hy + 2.5 * s); ctx.fill();   // beak
+  ctx.fillStyle = "#3b3140"; if (h.blink > 0) { ctx.beginPath(); ctx.arc(hx + d * 3 * s, hy - 1.5 * s, 1.4 * s, 0, 7); ctx.fill(); } else ctx.fillRect(hx + d * 3 * s - 1.4 * s, hy - 1.5 * s, 2.8 * s, 0.8 * s);
+  if (puff > 0.5) { ctx.fillStyle = "rgba(255,143,107,.35)"; ctx.beginPath(); ctx.arc(hx + d * 1 * s, hy + 2 * s, 2 * s, 0, 7); ctx.fill(); }  // blush while laying
+  ctx.restore();
+  if (h.bubble > 0) { ctx.globalAlpha = Math.min(1, h.bubble * 2); ctx.fillStyle = "#fffaf3"; const bx = x + d * 18 * s, byy = by - 24 * s; rr(bx - 17 * s, byy - 9 * s, 34 * s, 16 * s, 8 * s); ctx.fill(); ctx.fillStyle = "#7a6f7e"; ctx.font = `700 ${8 * s}px system-ui`; ctx.textAlign = "center"; ctx.fillText(h.mode === "lay" || h.bubble > 0.55 ? "bawk!" : "cluck", bx, byy + 2 * s); ctx.textAlign = "start"; ctx.globalAlpha = 1; }
+}
+
+function drawGirl() {
+  const g = girl, s = S, x = X(g.x), gy = Y(GROUND), f = g.face;
+  const run = Math.abs(g.vx) > 15, st = run ? Math.sin(g.step) : 0, bob = run ? Math.abs(Math.sin(g.step)) * 2 * s : 0;
+  const sq = g.squish * 3 * s;
+  // shadow
+  ctx.fillStyle = "rgba(59,49,64,.12)"; ctx.beginPath(); ctx.ellipse(x, gy + 2 * s, 20 * s, 4 * s, 0, 0, 7); ctx.fill();
+  // legs
+  ctx.strokeStyle = "#7a5a4a"; ctx.lineWidth = 4 * s; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(x - 4 * s, gy - 18 * s); ctx.lineTo(x - 4 * s + st * 5 * s, gy - 1 * s); ctx.moveTo(x + 4 * s, gy - 18 * s); ctx.lineTo(x + 4 * s - st * 5 * s, gy - 1 * s); ctx.stroke();
+  ctx.fillStyle = "#ff8f6b"; ctx.beginPath(); ctx.ellipse(x - 4 * s + st * 5 * s, gy, 4 * s, 2.2 * s, 0, 0, 7); ctx.ellipse(x + 4 * s - st * 5 * s, gy, 4 * s, 2.2 * s, 0, 0, 7); ctx.fill();
+  const top = gy - 18 * s - bob;
+  // dress
+  ctx.fillStyle = "#ff8fab"; ctx.beginPath(); ctx.moveTo(x - 9 * s, top - 22 * s + sq); ctx.lineTo(x + 9 * s, top - 22 * s + sq); ctx.lineTo(x + 15 * s, top + 2 * s); ctx.lineTo(x - 15 * s, top + 2 * s); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.55)"; for (let k = -1; k <= 1; k++) { ctx.beginPath(); ctx.arc(x + k * 7 * s, top - 6 * s, 1.6 * s, 0, 7); ctx.fill(); }
+  // arms up holding the basket
+  ctx.strokeStyle = "#f2c4a0"; ctx.lineWidth = 3.5 * s;
+  ctx.beginPath(); ctx.moveTo(x - 8 * s, top - 19 * s + sq); ctx.lineTo(x - 15 * s, top - 34 * s + sq); ctx.moveTo(x + 8 * s, top - 19 * s + sq); ctx.lineTo(x + 15 * s, top - 34 * s + sq); ctx.stroke();
+  // head
+  const hy = top - 30 * s + sq;
+  ctx.fillStyle = "#5a3a2e"; ctx.beginPath(); ctx.arc(x, hy, 11 * s, 0, 7); ctx.fill();                       // hair
+  ctx.beginPath(); ctx.arc(x - f * 10 * s, hy + 4 * s, 4.5 * s, 0, 7); ctx.fill();                             // pigtail
+  ctx.fillStyle = "#ff8f6b"; ctx.beginPath(); ctx.arc(x - f * 10 * s, hy, 2 * s, 0, 7); ctx.fill();            // hair tie
+  ctx.fillStyle = "#f6d0b0"; ctx.beginPath(); ctx.ellipse(x + f * 2 * s, hy + 2 * s, 8.5 * s, 8 * s, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = "#3b3140";
+  if (g.yuck > 0) { ctx.fillRect(x + f * 1 * s - 3.5 * s, hy + 1 * s, 2.5 * s, 1 * s); ctx.fillRect(x + f * 5 * s - 1 * s, hy + 1 * s, 2.5 * s, 1 * s); ctx.fillStyle = "#9bb26a"; ctx.beginPath(); ctx.arc(x + f * 3 * s, hy + 6 * s, 1.6 * s, 0, 7); ctx.fill(); }
+  else if (g.blink > 0) { ctx.beginPath(); ctx.arc(x + f * 0 * s - 1 * s, hy + 1.5 * s, 1.3 * s, 0, 7); ctx.arc(x + f * 5 * s, hy + 1.5 * s, 1.3 * s, 0, 7); ctx.fill(); }
+  else { ctx.fillRect(x - 2.4 * s, hy + 1.5 * s, 2.6 * s, 0.8 * s); ctx.fillRect(x + f * 5 * s - 1.3 * s, hy + 1.5 * s, 2.6 * s, 0.8 * s); }
+  if (g.yuck <= 0) { ctx.strokeStyle = "#3b3140"; ctx.lineWidth = 1 * s; ctx.beginPath(); ctx.arc(x + f * 2.5 * s, hy + 4.5 * s, g.happy > 0 ? 2.6 * s : 1.8 * s, 0.2, Math.PI - 0.2); ctx.stroke(); }
+  ctx.fillStyle = "rgba(255,143,107,.35)"; ctx.beginPath(); ctx.arc(x - 3.5 * s, hy + 4 * s, 1.8 * s, 0, 7); ctx.arc(x + f * 7 * s, hy + 4 * s, 1.8 * s, 0, 7); ctx.fill();
+  // basket on her head
+  const half = basketHalf() * s, rim = Y(basketY()) + sq, bh = 16 * s;
+  ctx.fillStyle = "#c98b4e"; ctx.beginPath(); ctx.moveTo(x - half, rim); ctx.lineTo(x + half, rim); ctx.lineTo(x + half * 0.78, rim + bh); ctx.lineTo(x - half * 0.78, rim + bh); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "#a76d3a"; ctx.lineWidth = 1.2 * s;
+  for (let k = 1; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x - half * (1 - k * 0.07), rim + k * bh / 3); ctx.lineTo(x + half * (1 - k * 0.07), rim + k * bh / 3); ctx.stroke(); }
+  for (let k = -3; k <= 3; k++) { ctx.beginPath(); ctx.moveTo(x + k * half / 3.5, rim); ctx.lineTo(x + k * half / 3.5 * 0.8, rim + bh); ctx.stroke(); }
+  ctx.fillStyle = "#e0a466"; rr(x - half - 2 * s, rim - 2.5 * s, half * 2 + 4 * s, 4.5 * s, 2 * s); ctx.fill();
+  // a little pile of caught eggs peeking out
+  const pile = Math.min(4, Math.floor((streak || 0) / 3) + (score > 0 ? 1 : 0));
+  for (let k = 0; k < pile; k++) { ctx.fillStyle = "#fff7ea"; ctx.beginPath(); ctx.ellipse(x + (k - (pile - 1) / 2) * 9 * s, rim - 2 * s, 4.5 * s, 5.5 * s, 0, Math.PI, 0); ctx.fill(); }
+  if (fx && fx.wide > 0) { ctx.strokeStyle = "rgba(142,202,230,.7)"; ctx.lineWidth = 2 * s; rr(x - half - 4 * s, rim - 6 * s, half * 2 + 8 * s, bh + 10 * s, 6 * s); ctx.stroke(); }
+  if (fx && fx.speed > 0 && run) { ctx.strokeStyle = "rgba(255,209,102,.8)"; ctx.lineWidth = 2 * s; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(x - f * (18 + k * 6) * s, top - (k * 8) * s); ctx.lineTo(x - f * (30 + k * 6) * s, top - (k * 8) * s); ctx.stroke(); } }
+}
+
+function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (!backdrop) buildBackdrop();
+  ctx.drawImage(backdrop, 0, 0, VW, VH);
+  if (!hens) return;
+  // splats on the grass
+  for (const sp of splats) {
+    const a = Math.min(1, sp.life); ctx.globalAlpha = a; const x = X(sp.x), y = Y(GROUND) + 3 * S;
+    if (sp.rotten) { ctx.fillStyle = "#a8b878"; ctx.beginPath(); ctx.ellipse(x, y, 14 * S, 4 * S, 0, 0, 7); ctx.fill(); }
+    else if (sp.col) { ctx.fillStyle = sp.col; ctx.beginPath(); ctx.ellipse(x, y, 10 * S, 3 * S, 0, 0, 7); ctx.fill(); }
+    else { ctx.fillStyle = "#fff7ea"; ctx.beginPath(); ctx.ellipse(x, y, 16 * S, 4.5 * S, 0, 0, 7); ctx.fill(); ctx.fillStyle = "#ffc23d"; ctx.beginPath(); ctx.ellipse(x + 2 * S, y - 0.5 * S, 5.5 * S, 3 * S, 0, 0, 7); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1;
+  for (const h of hens) drawHen(h);
+  for (const f of feathers) { ctx.save(); ctx.translate(X(f.x), Y(f.y)); ctx.rotate(Math.sin(f.r) * 0.8); ctx.globalAlpha = Math.min(1, f.life); ctx.fillStyle = "#fffaf0"; ctx.beginPath(); ctx.ellipse(0, 0, 2 * S, 6 * S, 0, 0, 7); ctx.fill(); ctx.restore(); }
+  ctx.globalAlpha = 1;
+  if (eggs) for (const e of eggs) egg(X(e.x), Y(e.y), e.rot, e.type, e.kind, e.wob);
+  if (girl) drawGirl();
+  for (const b of bits) { ctx.globalAlpha = clamp(b.life * 2, 0, 1); ctx.fillStyle = b.c; ctx.beginPath(); ctx.arc(X(b.x), Y(b.y), 2.4 * S, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = "center";
+  for (const f of floats) {
+    ctx.globalAlpha = f.t < 0.15 ? f.t / 0.15 : 1 - Math.max(0, (f.t - 0.6) / 0.5);
+    ctx.font = `800 ${13 * S}px system-ui`; const w = ctx.measureText(f.text).width + 18 * S, x = X(clamp(f.x, 70, FW - 70)), y = Y(f.y) - f.t * 26 * S;
+    ctx.fillStyle = f.bad ? "rgba(255,240,236,.92)" : "rgba(255,250,243,.92)"; rr(x - w / 2, y - 15 * S, w, 22 * S, 11 * S); ctx.fill();
+    ctx.fillStyle = f.bad ? "#d9534f" : "#3b3140"; ctx.fillText(f.text, x, y + 1 * S);
+  }
+  ctx.globalAlpha = 1; ctx.textAlign = "start";
+  if (isTouch && state === "play" && t < 4) { ctx.globalAlpha = 0.5 * (1 - t / 4); ctx.fillStyle = "#3b3140"; ctx.font = `700 ${13 * S}px system-ui`; ctx.textAlign = "center"; ctx.fillText("← drag anywhere →", X(FW / 2), Y(GROUND) + 36 * S); ctx.textAlign = "start"; ctx.globalAlpha = 1; }
+  if (state === "paused") { ctx.fillStyle = "rgba(59,49,64,.15)"; ctx.fillRect(0, 0, VW, VH); }
+}
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) { const dt = Math.min(0.033, (now - last) / 1000); last = now; update(dt); render(); requestAnimationFrame(frame); }
+resize();
+// hens and the girl idle behind the title card
+girl = { x: 200, vx: 0, step: 0, face: 1, blink: 2, squish: 0, yuck: 0, happy: 0 };
+hens = [makeHen(), makeHen(), makeHen()]; layoutHens(); hens.forEach((h) => (h.layT = 1e9));
+eggs = []; splats = []; bits = []; floats = []; feathers = []; fx = { speed: 0, wide: 0, magnet: 0, slow: 0 }; lives = 5; score = 0; streak = 0; girl.x = FW / 2;
+updateHud(); showTitle(); requestAnimationFrame(frame);
+
+// ---------- input ----------
+function act() {
+  if (state === "title" || (state === "over" && stateT > 1)) { sfx.ok(); newGame(); return true; }
+  if (state === "paused") { setState("play"); hideCard(); return true; }
+  return false;
+}
+function pause() { if (state === "play") { setState("paused"); keys.l = keys.r = false; drag = null; showCard(`<h1>Paused</h1><p>The hens are napping.</p><span class="go">${isTouch ? "Tap" : "Space"} to continue</span>`); } }
+const K = { ArrowLeft: "l", KeyA: "l", ArrowRight: "r", KeyD: "r" };
+addEventListener("keydown", (e) => {
+  if (K[e.code] || e.code === "Space") e.preventDefault();
+  if (e.code === "KeyM") return toggleSnd();
+  if (e.code === "KeyP" || e.code === "Escape") return state === "paused" ? act() : pause();
+  if (e.code === "Space" || e.code === "Enter") return act();
+  if (K[e.code]) { if (state === "title") act(); keys[K[e.code]] = true; }
+});
+addEventListener("keyup", (e) => { if (K[e.code]) keys[K[e.code]] = false; });
+addEventListener("blur", () => { keys.l = keys.r = false; drag = null; });
+addEventListener("pointerdown", (e) => {
+  if (e.target.closest(".btns")) return; e.preventDefault();
+  if (act() && state !== "play") return;
+  if (state === "play") drag = { id: e.pointerId, x0: e.clientX, b0: girl.x, target: girl.x };
+});
+addEventListener("pointermove", (e) => {
+  if (!drag || e.pointerId !== drag.id) return;
+  drag.target = clamp(drag.b0 + (e.clientX - drag.x0) / S * 1.3, 30, FW - 30);
+  if (drag.target <= 30 || drag.target >= FW - 30) { drag.b0 = drag.target; drag.x0 = e.clientX; }
+});
+const endDrag = (e) => { if (drag && e.pointerId === drag.id) drag = null; };
+addEventListener("pointerup", endDrag); addEventListener("pointercancel", endDrag);
+document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+
+if (location.search.includes("debug")) window.__cc = {
+  get: () => ({ state, t: +t.toFixed(1), lives, score, streak, hens: hens.length, eggs: eggs.length, x: Math.round(girl.x) }),
+  eggs: () => eggs, girl: () => girl, keys, set: (o) => { if (o.t != null) t = o.t; if (o.x != null) girl.x = o.x; }, half: basketHalf, FW: () => FW,
+};
+})();
+</script>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>

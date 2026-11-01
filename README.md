@@ -18,6 +18,7 @@ Every game is a single self-contained HTML file. No installs, no build step, no 
 | [Roll Rush](https://sakhadib.github.io/games/roll-rush/) | 2D arcade | The platforms rise and the ceiling is spikes. Roll down, chain freefall combos, grab power-ups, and dive through six zones. |
 | [Balloon Bow](https://sakhadib.github.io/games/balloon-bow/) | 2D archery | Old-school archery in a classic desktop window. Aim, charge, run for arrow packs, and don't let 10 balloons escape. |
 | [Night Landing](https://sakhadib.github.io/games/night-landing/) | 2D arcade | Your UFO sinks lower every pass over a dark city. Drop one bomb at a time, clear the skyline, and land. |
+| [Coop Catch](https://sakhadib.github.io/games/coop-catch/) | 2D arcade | Hens on a rail lay eggs; run with your basket to catch them, dodge rotten eggs, and grab booster eggs. Five lives. |
 
 ## How it works
 
