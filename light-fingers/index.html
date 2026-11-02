@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Light Fingers · a stealth heist in the dark | The Oven</title>
+<meta name="description" content="A free top-down stealth game in your browser. Sneak through a dark apartment, grab every gold coin, and stay out of the policeman's torch. Run, hide in wardrobes, and don't get caught. No ads, works on mobile.">
+<meta name="keywords" content="stealth game, thief game, heist game, police torch game, horror stealth, top down stealth, browser game, no ads">
+<meta name="author" content="Sakhawat Adib">
+<link rel="canonical" href="https://sakhadib.github.io/games/light-fingers/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Oven">
+<meta property="og:title" content="Light Fingers · The Oven">
+<meta property="og:description" content="Sneak through a dark apartment, grab the gold, and stay out of the torchlight.">
+<meta property="og:url" content="https://sakhadib.github.io/games/light-fingers/">
+<meta property="og:image" content="https://sakhadib.github.io/games/assets/shots/light-fingers.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sakhadib.github.io/games/assets/shots/light-fingers.jpg">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Light Fingers","url":"https://sakhadib.github.io/games/light-fingers/","description":"A top-down stealth game. Sneak through a dark apartment, grab every gold coin, and stay out of the policeman's torch. Run, hide in wardrobes, and don't get caught.","image":"https://sakhadib.github.io/games/assets/shots/light-fingers.jpg","genre":["Stealth","Arcade"],"gamePlatform":["Web browser","Mobile","Desktop"],"applicationCategory":"Game","operatingSystem":"Any","playMode":"SinglePlayer","isAccessibleForFree":true,"inLanguage":"en","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Sakhawat Adib","url":"https://portfolio.sakhawatadib.com"},"isPartOf":{"@type":"WebSite","name":"The Oven","url":"https://sakhadib.github.io/games/"}}</script>
+<meta name="theme-color" content="#05060b">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%2305060b'/><path d='M3 13 L13 3 L15 8 Z' fill='%23ffd88a' opacity='.8'/><circle cx='4' cy='12' r='2.2' fill='%23e8e8f0'/><circle cx='4' cy='12' r='1' fill='%2305060b'/></svg>">
+<style>
+  :root { --ink: #e8e6f0; --muted: #8f8aa3; --warm: #ffcf7a; --red: #ff5a5f; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #05060b; }
+  body { font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; display: block; }
+  #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 16px; pointer-events: none; z-index: 3; }
+  .lv { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--muted); }
+  #coins { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-top: 2px; }
+  #coins small { font-size: 13px; color: var(--muted); font-weight: 700; }
+  #status { margin-top: 6px; display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 2px; padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,.06); color: var(--muted); transition: background .2s, color .2s; }
+  #status.sus { background: rgba(255,207,122,.15); color: var(--warm); }
+  #status.seen { background: rgba(255,90,95,.2); color: var(--red); }
+  #status.hid { background: rgba(140,170,255,.15); color: #a9bcff; }
+  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .btns { display: flex; gap: 6px; pointer-events: auto; }
+  .btn { font: 700 13px system-ui; color: var(--ink); background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 8px 11px; cursor: pointer; text-decoration: none; line-height: 1; }
+  #best { font-size: 12px; font-weight: 700; color: var(--muted); }
+  #ov { position: fixed; inset: 0; display: none; place-items: center; z-index: 10; padding: 16px; background: rgba(3,3,8,.55); backdrop-filter: blur(3px); }
+  #ov.show { display: grid; }
+  .card { width: 100%; max-width: 380px; background: rgba(20,19,30,.92); border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 26px 24px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .card .kicker { font-size: 11px; font-weight: 700; letter-spacing: 4px; color: var(--muted); text-transform: uppercase; }
+  .card h1 { margin: 6px 0 8px; font-size: 32px; font-weight: 800; letter-spacing: -1px; line-height: 1.05; }
+  .card h1 span { color: var(--warm); }
+  .card h1 .r { color: var(--red); }
+  .card p { margin: 8px 0; color: #b7b2c8; font-size: 14.5px; line-height: 1.55; }
+  .card ul { text-align: left; margin: 10px 0; padding-left: 18px; color: #b7b2c8; font-size: 13.5px; line-height: 1.6; }
+  .rows { display: grid; grid-template-columns: 1fr auto; gap: 5px 14px; text-align: left; margin: 12px auto; max-width: 240px; font-size: 14px; color: #b7b2c8; }
+  .rows b { color: var(--ink); text-align: right; }
+  .go { display: inline-block; margin-top: 14px; background: var(--warm); color: #14131e; font-weight: 800; padding: 13px 22px; border-radius: 16px; cursor: pointer; border: 0; font-size: 15px; }
+  kbd { font: 700 12px system-ui; background: rgba(255,255,255,.1); border-radius: 6px; padding: 1px 6px; color: var(--ink); }
+
+  /* touch controls */
+  .tc { display: none; position: fixed; z-index: 4; touch-action: none; }
+  body.touch .tc { display: block; }
+  #joy { left: 18px; bottom: calc(22px + env(safe-area-inset-bottom)); width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,.05); border: 1.5px solid rgba(255,255,255,.14); }
+  #knob { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; background: rgba(232,230,240,.22); border: 1.5px solid rgba(255,255,255,.3); pointer-events: none; }
+  .rb { right: 20px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); color: var(--ink); font: 800 13px system-ui; letter-spacing: 1px; display: grid; place-items: center; }
+  #run { bottom: calc(30px + env(safe-area-inset-bottom)); width: 92px; height: 92px; }
+  #run.on { background: rgba(255,207,122,.3); border-color: var(--warm); }
+  #hide { bottom: calc(136px + env(safe-area-inset-bottom)); width: 70px; height: 70px; right: 31px; opacity: .25; }
+  #hide.avail { opacity: 1; background: rgba(140,170,255,.2); border-color: #a9bcff; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div><div class="lv" id="lv">LEVEL 1</div><div id="coins">0<small> / 0 gold</small></div><div id="status">UNSEEN</div></div>
+  <div class="right">
+    <div class="btns"><button class="btn" id="snd" title="Sound (M)">♪</button><a class="btn" href="../" title="Back to The Oven">⌂</a></div>
+    <div id="best">BEST 0</div>
+  </div>
+</div>
+<div class="tc" id="joy"><div id="knob"></div></div>
+<button class="tc rb" id="hide">HIDE</button>
+<button class="tc rb" id="run">RUN</button>
+<div id="ov" class="show"><div class="card" id="card"></div></div>
+
+<script>
+(() => {
+"use strict";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const isTouch = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && matchMedia("(hover: none)").matches);
+if (isTouch) document.body.classList.add("touch");
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = (a) => a[(Math.random() * a.length) | 0];
+const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
+
+// ---------- canvas ----------
+const cv = $("#c"), ctx = cv.getContext("2d");
+let DPR = 1, VW = 0, VH = 0, S = 1;
+const dark = document.createElement("canvas"), dctx = dark.getContext("2d");
+function resize() {
+  DPR = Math.min(1.5, devicePixelRatio || 1); VW = innerWidth; VH = innerHeight;
+  cv.width = VW * DPR; cv.height = VH * DPR; cv.style.width = VW + "px"; cv.style.height = VH + "px";
+  dark.width = Math.ceil(VW * DPR / 2); dark.height = Math.ceil(VH * DPR / 2);   // darkness at half-res: soft edges, cheap
+  S = Math.min(VW, VH) / 400;
+}
+addEventListener("resize", resize);
+
+// ---------- audio ----------
+let AC = null, muted = store.get("lf.muted", false);
+function ac() { if (muted) return null; try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } if (AC.state === "suspended") AC.resume(); return AC; }
+function tone(f, dur, type = "sine", vol = 0.08, slide = 0, delay = 0) {
+  const a = ac(); if (!a || vol <= 0.001) return;
+  const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f * slide), t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+function thump(vol = 0.1, f = 120) {
+  const a = ac(); if (!a || vol <= 0.002) return;
+  const b = a.createBuffer(1, a.sampleRate * 0.12, a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 3);
+  const s = a.createBufferSource(), fl = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = b; fl.type = "lowpass"; fl.frequency.value = f * 4; g.gain.value = vol; s.connect(fl).connect(g).connect(a.destination); s.start();
+}
+const sfx = {
+  coin() { tone(1318, 0.09, "triangle", 0.06); tone(1760, 0.14, "triangle", 0.05, 0, 0.06); },
+  step(v) { thump(v, 90); },
+  myStep(v) { thump(v, 160); },
+  heart(v) { tone(55, 0.12, "sine", v); tone(50, 0.14, "sine", v * 0.8, 0, 0.16); },
+  alert() { tone(880, 0.12, "square", 0.05); tone(1175, 0.2, "square", 0.05, 0, 0.1); },
+  hmm() { tone(420, 0.25, "triangle", 0.05, 1.3); },
+  hide() { tone(180, 0.18, "triangle", 0.05, 0.7); thump(0.06, 200); },
+  whack() { thump(0.35, 300); tone(160, 0.1, "square", 0.06, 0.5); },
+  clear() { [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, "triangle", 0.06, 0, i * 0.1)); },
+  ok() { tone(660, 0.08, "triangle", 0.06); },
+};
+const sndBtn = $("#snd");
+function syncSnd() { sndBtn.textContent = muted ? "×" : "♪"; sndBtn.style.opacity = muted ? 0.5 : 1; }
+function toggleSnd() { muted = !muted; store.set("lf.muted", muted); syncSnd(); if (!muted) sfx.ok(); }
+syncSnd(); sndBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleSnd(); });
+
+// ======================================================================
+// APARTMENT GENERATION: split a rectangle into rooms (BSP), thin walls,
+// doorways on every split (plus extra ones for loops), furniture, coins.
+// ======================================================================
+const WALL = 6, DOOR = 56, R_THIEF = 10, R_COP = 11;
+let AW, AH, rooms, walls, doors, furn, wardrobes, coins, adj;
+
+function genApartment(L) {
+  const k = Math.min(L, 7);
+  AW = 760 + 130 * k; AH = 520 + 90 * k;
+  const MIN = 165, maxDepth = 3 + Math.floor(Math.min(L, 9) / 3);
+  const leaves = [], splits = [];
+  (function split(r, depth) {
+    const canV = r.w >= MIN * 2, canH = r.h >= MIN * 2;
+    const small = r.w * r.h < MIN * MIN * 4.5;
+    if ((!canV && !canH) || depth >= maxDepth || (depth >= 2 && small && Math.random() < 0.6)) { leaves.push(r); return; }
+    const vert = canV && (!canH || r.w > r.h * 1.15 || (r.w / r.h > 0.87 && Math.random() < 0.5));
+    if (vert) {
+      const x = Math.round(rnd(r.x + MIN, r.x + r.w - MIN) / 10) * 10;
+      splits.push({ v: true, c: x, a: r.y, b: r.y + r.h });
+      split({ x: r.x, y: r.y, w: x - r.x, h: r.h }, depth + 1); split({ x, y: r.y, w: r.x + r.w - x, h: r.h }, depth + 1);
+    } else {
+      const y = Math.round(rnd(r.y + MIN, r.y + r.h - MIN) / 10) * 10;
+      splits.push({ v: false, c: y, a: r.x, b: r.x + r.w });
+      split({ x: r.x, y: r.y, w: r.w, h: y - r.y }, depth + 1); split({ x: r.x, y, w: r.w, h: r.y + r.h - y }, depth + 1);
+    }
+  })({ x: 0, y: 0, w: AW, h: AH }, 0);
+  rooms = leaves.map((r, i) => ({ ...r, i, type: "bed", cx: r.x + r.w / 2, cy: r.y + r.h / 2 }));
+
+  // walls: the outer shell, then each split line with doorway gaps cut out
+  walls = [
+    { ax: 0, ay: 0, bx: AW, by: 0 }, { ax: AW, ay: 0, bx: AW, by: AH }, { ax: AW, ay: AH, bx: 0, by: AH }, { ax: 0, ay: AH, bx: 0, by: 0 },
+  ];
+  doors = [];
+  for (const s of splits) {
+    // T-junctions: where a perpendicular wall meets this one; doorways must stay clear of them
+    const ts = [s.a, s.b];
+    for (const o of splits) if (o.v !== s.v && (o.a === s.c || o.b === s.c) && o.c > s.a && o.c < s.b) ts.push(o.c);
+    ts.sort((p, q) => p - q);
+    const free = []; for (let i = 0; i < ts.length - 1; i++) if (ts[i + 1] - ts[i] >= DOOR + 30) free.push([ts[i] + DOOR / 2 + 12, ts[i + 1] - DOOR / 2 - 12]);
+    const want = (s.b - s.a > 300 && Math.random() < 0.55) ? 2 : 1;
+    const centers = [];
+    for (let n = 0; n < want && free.length; n++) {
+      const segs = free.filter((f) => f[1] >= f[0]); if (!segs.length) break;
+      const f = pick(segs), d = rnd(f[0], f[1]);
+      if (centers.every((c) => Math.abs(c - d) > DOOR * 2)) centers.push(d);
+    }
+    if (!centers.length) centers.push((s.a + s.b) / 2);
+    centers.sort((p, q) => p - q);
+    let start = s.a;
+    for (const d of centers) {
+      addWallPiece(s, start, d - DOOR / 2); start = d + DOOR / 2;
+      const dx = s.v ? s.c : d, dy = s.v ? d : s.c;
+      const ra = roomAt(s.v ? dx - 4 : dx, s.v ? dy : dy - 4), rb = roomAt(s.v ? dx + 4 : dx, s.v ? dy : dy + 4);
+      if (ra && rb && ra !== rb) doors.push({ x: dx, y: dy, v: s.v, a: ra.i, b: rb.i });
+    }
+    addWallPiece(s, start, s.b);
+  }
+  addLoops();
+  adj = rooms.map(() => []);
+  for (const [di, d] of doors.entries()) { adj[d.a].push({ to: d.b, door: di }); adj[d.b].push({ to: d.a, door: di }); }
+
+  // room types: the biggest is the living room, small ones become bathrooms, one kitchen
+  const byArea = [...rooms].sort((p, q) => q.w * q.h - p.w * p.h);
+  byArea[0].type = "living";
+  if (byArea.length > 2) byArea[byArea.length - 1].type = "bath";
+  if (byArea.length > 3) byArea[1].type = "kitchen";
+  if (byArea.length > 5) byArea[byArea.length - 2].type = "bath";
+
+  // furniture against walls, never blocking doorways; wardrobes are hiding spots
+  furn = []; wardrobes = [];
+  for (const r of rooms) {
+    const items = r.type === "living" ? [["sofa", 96, 30], ["shelf", 60, 18], ["plant", 18, 18]]
+      : r.type === "kitchen" ? [["counter", 110, 24], ["fridge", 30, 28], ["table", 44, 44, true]]
+      : r.type === "bath" ? [["tub", 64, 32], ["sink", 30, 20]]
+      : [["bed", 62, 84], ["wardrobe", 46, 22], ["desk", 50, 22]];
+    for (const [kind, w, h, middle] of items) placeFurniture(r, kind, w, h, middle);
+    if (r.type === "living" && Math.random() < 0.6) placeFurniture(r, "wardrobe", 46, 22);
+  }
+  if (!wardrobes.length) { const r = rooms.find((q) => q.type !== "bath") || rooms[0]; placeFurniture(r, "wardrobe", 46, 22); }
+  // only a few hiding places per apartment
+  const cap = 2 + Math.floor(L / 3);
+  while (wardrobes.length > cap) { const w = wardrobes.splice((Math.random() * wardrobes.length) | 0, 1)[0]; furn.splice(furn.indexOf(w), 1); }
+}
+// extra doorways between neighbouring rooms that aren't directly connected yet: loops let you circle around him
+function addLoops() {
+  const linked = new Set(doors.map((d) => Math.min(d.a, d.b) + "-" + Math.max(d.a, d.b)));
+  const ends = []; for (const w of walls) ends.push([w.ax, w.ay], [w.bx, w.by]);
+  const want = Math.max(2, Math.round(rooms.length / 2.5));
+  const cands = [];
+  for (let i = 4; i < walls.length; i++) {
+    const w = walls[i], v = w.ax === w.bx, a0 = v ? Math.min(w.ay, w.by) : Math.min(w.ax, w.bx), a1 = v ? Math.max(w.ay, w.by) : Math.max(w.ax, w.bx), c = v ? w.ax : w.ay;
+    if (a1 - a0 < DOOR + 40) continue;
+    const ts = ends.filter(([x, y]) => (v ? x === c && y > a0 && y < a1 : y === c && x > a0 && x < a1)).map(([x, y]) => (v ? y : x));
+    for (let p = a0 + DOOR / 2 + 14; p <= a1 - DOOR / 2 - 14; p += 16) {
+      if (ts.some((q) => Math.abs(q - p) < DOOR / 2 + 14)) continue;
+      const x = v ? c : p, y = v ? p : c;
+      const ra = roomAt(v ? x - 5 : x, v ? y : y - 5), rb = roomAt(v ? x + 5 : x, v ? y : y + 5);
+      if (!ra || !rb || ra === rb) continue;
+      const key = Math.min(ra.i, rb.i) + "-" + Math.max(ra.i, rb.i);
+      if (!linked.has(key)) cands.push({ i, p, v, c, ra, rb, key });
+    }
+  }
+  let added = 0;
+  while (added < want && cands.length) {
+    const k = cands.splice((Math.random() * cands.length) | 0, 1)[0];
+    if (linked.has(k.key)) continue;
+    const w = walls[k.i]; if (!w) continue;
+    const v = k.v, a0 = v ? Math.min(w.ay, w.by) : Math.min(w.ax, w.bx), a1 = v ? Math.max(w.ay, w.by) : Math.max(w.ax, w.bx);
+    if (k.p - DOOR / 2 < a0 || k.p + DOOR / 2 > a1) continue;
+    walls.splice(k.i, 1);
+    const s = { v, c: k.c };
+    addWallPiece(s, a0, k.p - DOOR / 2); addWallPiece(s, k.p + DOOR / 2, a1);
+    doors.push({ x: v ? k.c : k.p, y: v ? k.p : k.c, v, a: k.ra.i, b: k.rb.i });
+    linked.add(k.key); added++;
+    // indices shifted: drop the remaining candidates on walls we've touched
+    for (const q of cands) if (q.i >= k.i) q.i = -1;
+    for (let j = cands.length - 1; j >= 0; j--) if (cands[j].i < 0) cands.splice(j, 1);
+  }
+}
+function addWallPiece(s, a, b) {
+  if (b - a < 2) return;
+  walls.push(s.v ? { ax: s.c, ay: a, bx: s.c, by: b } : { ax: a, ay: s.c, bx: b, by: s.c });
+}
+function roomAt(x, y) { for (const r of rooms) if (x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) return r; return null; }
+function nearDoor(x, y, w, h, m) { for (const d of doors) { const cx = clamp(d.x, x, x + w), cy = clamp(d.y, y, y + h); if (Math.hypot(d.x - cx, d.y - cy) < m) return true; } return false; }
+function rectHit(x, y, w, h, pad) { for (const f of furn) if (x < f.x + f.w + pad && x + w > f.x - pad && y < f.y + f.h + pad && y + h > f.y - pad) return true; return false; }
+function placeFurniture(r, kind, w, h, middle) {
+  const inset = WALL / 2 + 2;
+  for (let tries = 0; tries < 40; tries++) {
+    let x, y, ww = w, hh = h, side = (Math.random() * 4) | 0;
+    if (middle) { x = r.x + rnd(r.w * 0.25, r.w * 0.75 - w); y = r.y + rnd(r.h * 0.25, r.h * 0.75 - h); }
+    else {
+      if (side % 2 === 1) { ww = h; hh = w; }                                   // rotate to sit along the wall
+      if (ww > r.w - 20 || hh > r.h - 20) continue;
+      if (side === 0) { x = r.x + rnd(inset, r.w - ww - inset); y = r.y + inset; }
+      if (side === 2) { x = r.x + rnd(inset, r.w - ww - inset); y = r.y + r.h - hh - inset; }
+      if (side === 1) { x = r.x + r.w - ww - inset; y = r.y + rnd(inset, r.h - hh - inset); }
+      if (side === 3) { x = r.x + inset; y = r.y + rnd(inset, r.h - hh - inset); }
+    }
+    if (nearDoor(x, y, ww, hh, 50) || rectHit(x, y, ww, hh, 26)) continue;
+    // keep the middle of the room walkable
+    const cx = r.cx, cy = r.cy; if (Math.abs(x + ww / 2 - cx) < ww / 2 + 22 && Math.abs(y + hh / 2 - cy) < hh / 2 + 22) continue;
+    const f = { x, y, w: ww, h: hh, kind, side, room: r.i, hue: Math.random() };
+    furn.push(f);
+    if (kind === "wardrobe") {
+      // the spot you stand on to slip inside: in front of its doors
+      const nx = side === 1 ? -1 : side === 3 ? 1 : 0, ny = side === 0 ? 1 : side === 2 ? -1 : 0;
+      f.hx = x + ww / 2 + nx * (ww / 2 + 14); f.hy = y + hh / 2 + ny * (hh / 2 + 14);
+      wardrobes.push(f);
+    }
+    return f;
+  }
+  return null;
+}
+function freeSpot(r, pad = 14) {
+  for (let i = 0; i < 60; i++) {
+    const x = rnd(r.x + 18, r.x + r.w - 18), y = rnd(r.y + 18, r.y + r.h - 18);
+    if (!rectHit(x - pad, y - pad, pad * 2, pad * 2, 0)) return { x, y };
+  }
+  return { x: r.cx, y: r.cy };
+}
+function placeCoins(n, avoid) {
+  coins = [];
+  const weights = rooms.map((r) => (adj[r.i].length === 1 ? 2.2 : 1) * Math.sqrt(r.w * r.h));     // dead-end rooms hold more
+  const tot = weights.reduce((a, b) => a + b, 0);
+  for (let tries = 0; coins.length < n && tries < 4000; tries++) {
+    let q = Math.random() * tot, r = rooms[0]; for (const [i, w] of weights.entries()) { q -= w; if (q <= 0) { r = rooms[i]; break; } }
+    const x = rnd(r.x + 16, r.x + r.w - 16), y = rnd(r.y + 16, r.y + r.h - 16);
+    if (rectHit(x - 9, y - 9, 18, 18, 2)) continue;
+    if (coins.some((c) => Math.hypot(c.x - x, c.y - y) < 36)) continue;
+    if (Math.hypot(x - avoid.x, y - avoid.y) < 60) continue;
+    coins.push({ x, y, ph: Math.random() * 6 });
+  }
+}
+function roomHops(from) { const d = rooms.map(() => 1e9), q = [from]; d[from] = 0; while (q.length) { const a = q.shift(); for (const e of adj[a]) if (d[e.to] > d[a] + 1) { d[e.to] = d[a] + 1; q.push(e.to); } } return d; }
+
+// ---------- geometry ----------
+function rayHit(ox, oy, dx, dy, w) {
+  const ex = w.bx - w.ax, ey = w.by - w.ay, den = dx * ey - dy * ex;
+  if (Math.abs(den) < 1e-9) return Infinity;
+  const t = ((w.ax - ox) * ey - (w.ay - oy) * ex) / den, u = ((w.ax - ox) * dy - (w.ay - oy) * dx) / den;
+  return t > 0 && u >= -0.001 && u <= 1.001 ? t : Infinity;
+}
+function castRay(ox, oy, a, max) { const dx = Math.cos(a), dy = Math.sin(a); let best = max; for (const w of walls) { const t = rayHit(ox, oy, dx, dy, w); if (t < best) best = t; } return best; }
+function los(ax, ay, bx, by) { const d = Math.hypot(bx - ax, by - ay); if (d < 1) return true; const dx = (bx - ax) / d, dy = (by - ay) / d; for (const w of walls) if (rayHit(ax, ay, dx, dy, w) < d - 0.5) return false; return true; }
+function collide(p, r) {
+  for (let it = 0; it < 3; it++) {
+    for (const w of walls) {
+      const ex = w.bx - w.ax, ey = w.by - w.ay, L2 = ex * ex + ey * ey;
+      const t = clamp(((p.x - w.ax) * ex + (p.y - w.ay) * ey) / L2, 0, 1), cx = w.ax + ex * t, cy = w.ay + ey * t;
+      const dx = p.x - cx, dy = p.y - cy, d = Math.hypot(dx, dy), m = r + WALL / 2;
+      if (d < m && d > 1e-6) { p.x = cx + dx / d * m; p.y = cy + dy / d * m; }
+    }
+    for (const f of furn) {
+      const cx = clamp(p.x, f.x, f.x + f.w), cy = clamp(p.y, f.y, f.y + f.h), dx = p.x - cx, dy = p.y - cy, d = Math.hypot(dx, dy);
+      if (d < r) { if (d > 1e-6) { p.x = cx + dx / d * r; p.y = cy + dy / d * r; } else { p.y = f.y - r; } }
+    }
+  }
+  p.x = clamp(p.x, r + WALL / 2, AW - r - WALL / 2); p.y = clamp(p.y, r + WALL / 2, AH - r - WALL / 2);
+}
+
+// ======================================================================
+// GAME STATE
+// ======================================================================
+let state = "title", stateT = 0, clock = 0, level = 1, score = 0, total = 0, got = 0, levelT = 0, seenThisLevel = false;
+let thief, cops, noise = [], cam = { x: 0, y: 0 }, memory, mctx, beat = null, popups = [];
+let best = store.get("lf.best", 0), bestLevel = store.get("lf.bestLevel", 0);
+const input = { x: 0, y: 0, run: false, hide: false };
+const keys = {};
+
+function levelCfg(L) {
+  return {
+    coins: 14 + L * 4,
+    cops: L >= 7 ? 3 : L >= 4 ? 2 : 1,
+    range: Math.min(300, 210 + L * 12),
+    half: Math.min(0.66, 0.46 + L * 0.03),
+    patrol: Math.min(72, 52 + L * 3),
+    chase: Math.min(122, 108 + L * 2),
+    hear: Math.min(260, 150 + L * 14),
+  };
+}
+let CFG;
+function startLevel(L) {
+  level = L; CFG = levelCfg(L);
+  // try a few layouts; keep one with enough rooms and a wardrobe
+  for (let i = 0; i < 30; i++) { genApartment(L); if (rooms.length >= 4 + Math.min(L, 4) && rooms.length <= 7 + L * 1.5 && wardrobes.length) break; }
+  // officer starts in the living room; the thief starts as far away as possible
+  const living = rooms.find((r) => r.type === "living") || rooms[0];
+  const hops = roomHops(living.i);
+  const far = rooms.reduce((a, r) => (hops[r.i] > hops[a.i] ? r : a), rooms[0]);
+  const sp = freeSpot(far, 16);
+  thief = { x: sp.x, y: sp.y, vx: 0, vy: 0, face: 0, step: 0, hidden: null, hideT: 0, lit: false, bag: 0, stepT: 0 };
+  cops = [];
+  const copRooms = [living, ...rooms.filter((r) => r !== living && r !== far).sort((a, b) => hops[b.i] - hops[a.i])];
+  for (let i = 0; i < CFG.cops; i++) {
+    const r = copRooms[Math.min(i * 2, copRooms.length - 1)], p = freeSpot(r, 16);
+    cops.push(makeCop(p.x, p.y));
+  }
+  placeCoins(CFG.coins, thief);
+  total = coins.length; got = 0; levelT = 0; seenThisLevel = false; noise = []; popups = [];
+  memory = document.createElement("canvas"); memory.width = Math.ceil(AW / 6); memory.height = Math.ceil(AH / 6); mctx = memory.getContext("2d");
+  cam.x = thief.x; cam.y = thief.y;
+  setState("play"); hideCard(); updateHud();
+}
+function setState(s) { state = s; stateT = 0; }
+
+// ======================================================================
+// THE OFFICER: patrol -> investigate (noise) -> chase (sees you) -> search
+// ======================================================================
+function makeCop(x, y) {
+  return { x, y, dir: Math.random() * 6.28, look: 0, state: "patrol", path: [], goal: null, wait: rnd(0.5, 1.5), sweepPh: Math.random() * 6,
+    lastSeen: null, lastSeenT: -9, searchLeft: 0, searchT: 0, stepT: 0, step: 0, stuckT: 0, lastPos: { x, y }, knows: null, mark: "", markT: 0, hist: [] };
+}
+function planPath(c, tx, ty) {
+  const a = roomAt(c.x, c.y), b = roomAt(tx, ty);
+  c.path = [];
+  if (a && b && a !== b) {
+    const prev = rooms.map(() => -1), via = rooms.map(() => -1), q = [a.i]; prev[a.i] = a.i;
+    while (q.length) { const r = q.shift(); if (r === b.i) break; for (const e of adj[r]) if (prev[e.to] < 0) { prev[e.to] = r; via[e.to] = e.door; q.push(e.to); } }
+    const ds = []; let r = b.i; while (r !== a.i && prev[r] >= 0) { ds.push(doors[via[r]]); r = prev[r]; }
+    ds.reverse();
+    for (const d of ds) {           // walk through each doorway square-on: a point before it, the middle, a point after it
+      const fromRoom = roomAt(d.v ? d.x - 4 : d.x, d.v ? d.y : d.y - 4) === roomAt(c.path.length ? c.path[c.path.length - 1].x : c.x, c.path.length ? c.path[c.path.length - 1].y : c.y);
+      const n = fromRoom ? 1 : -1;
+      if (d.v) c.path.push({ x: d.x - 18 * n, y: d.y }, { x: d.x + 18 * n, y: d.y });
+      else c.path.push({ x: d.x, y: d.y - 18 * n }, { x: d.x, y: d.y + 18 * n });
+    }
+  }
+  c.path.push({ x: tx, y: ty });
+  c.goal = { x: tx, y: ty };
+}
+function nextPatrol(c) {
+  const here = roomAt(c.x, c.y);
+  let options = rooms.filter((r) => r !== here && !c.hist.includes(r.i));
+  if (!options.length) options = rooms.filter((r) => r !== here);
+  const r = pick(options); c.hist.push(r.i); if (c.hist.length > Math.min(3, rooms.length - 2)) c.hist.shift();
+  const p = freeSpot(r, 16); planPath(c, p.x, p.y);
+}
+function setMark(c, m) { c.mark = m; c.markT = 1.6; }
+function canSee(c) {
+  if (thief.hidden) return false;
+  const dx = thief.x - c.x, dy = thief.y - c.y, d = Math.hypot(dx, dy);
+  if (d < 26) return los(c.x, c.y, thief.x, thief.y);              // right next to him: he feels you
+  if (d > CFG.range) return false;
+  if (Math.abs(angDiff(Math.atan2(dy, dx), c.dir)) > CFG.half) return false;
+  return los(c.x, c.y, thief.x, thief.y);
+}
+function updateCop(c, dt) {
+  c.markT = Math.max(0, c.markT - dt);
+  const sees = canSee(c);
+  if (sees) {
+    if (c.state !== "chase") { setMark(c, "!"); sfx.alert(); seenThisLevel = true; }
+    c.state = "chase"; c.lastSeen = { x: thief.x, y: thief.y }; c.lastSeenT = clock;
+  }
+  // a thief who hides while being watched has been spotted doing it
+  if (thief.hidden && c.state === "chase" && clock - c.lastSeenT < 1.0 && !c.knows) { c.knows = thief.hidden; planPath(c, thief.hidden.hx, thief.hidden.hy); }
+
+  let speed = CFG.patrol, aim = null;
+  if (c.knows) {
+    speed = CFG.chase; aim = Math.atan2(c.knows.y + c.knows.h / 2 - c.y, c.knows.x + c.knows.w / 2 - c.x);
+    if (Math.hypot(c.x - c.knows.hx, c.y - c.knows.hy) < 20 && thief.hidden === c.knows) { caught(c); return; }
+    if (!thief.hidden) c.knows = null;
+  } else if (c.state === "chase") {
+    speed = CFG.chase;
+    if (sees) { c.path = [{ x: thief.x, y: thief.y }]; aim = Math.atan2(thief.y - c.y, thief.x - c.x); }
+    else if (clock - c.lastSeenT > 0.5) {   // lost you: go to where you were last seen, then search
+      c.state = "search"; setMark(c, "?"); sfx.hmm(); planPath(c, c.lastSeen.x, c.lastSeen.y); c.searchLeft = 2; c.searchT = 0; c.wait = 1.2;
+    } else if (c.lastSeen) c.path = [{ x: c.lastSeen.x, y: c.lastSeen.y }];
+  } else if (c.state === "search") {
+    speed = CFG.patrol * 1.35; c.searchT += dt;
+    if (!c.path.length) {
+      c.wait -= dt;
+      if (c.wait <= 0) {
+        if (c.searchLeft-- > 0) { const here = roomAt(c.x, c.y); const nb = here ? adj[here.i] : []; const r = nb.length ? rooms[pick(nb).to] : pick(rooms); const p = freeSpot(r, 16); planPath(c, p.x, p.y); c.wait = 1.2; }
+        else { c.state = "patrol"; nextPatrol(c); }
+      }
+    }
+    if (c.searchT > 12) { c.state = "patrol"; nextPatrol(c); }
+  } else if (c.state === "investigate") {
+    speed = CFG.patrol * 1.25;
+    if (!c.path.length) { c.wait -= dt; if (c.wait <= 0) { c.state = "patrol"; nextPatrol(c); } }
+  } else { // patrol
+    if (!c.path.length) { c.wait -= dt; if (c.wait <= 0) { nextPatrol(c); c.wait = rnd(0.8, 1.8); } }
+  }
+
+  // walk along the path
+  const moving = c.path.length > 0;
+  if (moving) {
+    const p = c.path[0], dx = p.x - c.x, dy = p.y - c.y, d = Math.hypot(dx, dy);
+    if (d < 8) c.path.shift();
+    else { const st = Math.min(d, speed * dt); c.x += dx / d * st; c.y += dy / d * st; c.heading = Math.atan2(dy, dx); }
+    collide(c, R_COP);
+    c.step += dt * speed / 9;
+    c.stepT -= dt; if (c.stepT <= 0) { c.stepT = c.state === "chase" ? 0.28 : 0.42; const dd = Math.hypot(c.x - thief.x, c.y - thief.y); sfx.step(Math.max(0, 0.18 * (1 - dd / 420))); }
+    // unstick
+    c.stuckT += dt; if (c.stuckT > 0.8) { if (Math.hypot(c.x - c.lastPos.x, c.y - c.lastPos.y) < 4 && c.state !== "chase") { c.path = []; c.wait = 0.2; } c.stuckT = 0; c.lastPos = { x: c.x, y: c.y }; }
+  }
+  // the torch: swept while walking, waved around when standing, locked on when chasing
+  c.sweepPh += dt * (moving ? 1.7 : 1.1);
+  let want;
+  if (aim != null) want = aim;
+  else if (moving && c.heading != null) want = c.heading + Math.sin(c.sweepPh) * 0.55;
+  else want = (c.heading ?? c.dir) + Math.sin(c.sweepPh) * 1.25;
+  c.dir += angDiff(want, c.dir) * Math.min(1, dt * (aim != null ? 9 : 4));
+
+  if (!thief.hidden && Math.hypot(c.x - thief.x, c.y - thief.y) < R_COP + R_THIEF + 2) caught(c);
+}
+function hearNoise(x, y, r) {
+  noise.push({ x, y, r, t: 0 });
+  for (const c of cops) {
+    if (c.state === "chase" || c.knows) continue;
+    if (Math.hypot(c.x - x, c.y - y) < r) { if (c.state !== "investigate") { setMark(c, "?"); sfx.hmm(); } c.state = "investigate"; planPath(c, x, y); c.wait = 1.6; }
+  }
+}
+
+// ======================================================================
+// THE THIEF
+// ======================================================================
+function nearWardrobe() { for (const w of wardrobes) if (Math.hypot(thief.x - w.hx, thief.y - w.hy) < 24) return w; return null; }
+function toggleHide() {
+  if (state !== "play") return;
+  if (thief.hidden) { thief.hidden = null; sfx.hide(); return; }
+  const w = nearWardrobe(); if (w) { thief.hidden = w; thief.hideT = 0; thief.x = w.hx; thief.y = w.hy; thief.vx = thief.vy = 0; sfx.hide(); }
+}
+function update(dt) {
+  clock += dt; stateT += dt;
+  for (const n of noise) n.t += dt; noise = noise.filter((n) => n.t < 0.7);
+  for (const p of popups) p.t += dt; popups = popups.filter((p) => p.t < 1.2);
+  if (state === "caught") { updateBeat(dt); return; }
+  if (state !== "play") return;
+  levelT += dt;
+
+  // movement
+  let ix = input.x + (keys.d ? 1 : 0) - (keys.a ? 1 : 0), iy = input.y + (keys.s ? 1 : 0) - (keys.w ? 1 : 0);
+  const il = Math.hypot(ix, iy); if (il > 1) { ix /= il; iy /= il; }
+  if (thief.hidden) { thief.hideT += dt; if (il > 0.5 && thief.hideT > 0.35) { thief.hidden = null; sfx.hide(); } }
+  const running = (input.run || keys.shift) && il > 0.2;
+  thief.lit = cops.some((c) => litBy(c));
+  const top = (running ? 132 : 74) * (thief.lit ? 0.5 : 1);
+  if (!thief.hidden) {
+    thief.vx += (ix * top - thief.vx) * Math.min(1, dt * 12); thief.vy += (iy * top - thief.vy) * Math.min(1, dt * 12);
+    thief.x += thief.vx * dt; thief.y += thief.vy * dt; collide(thief, R_THIEF);
+    const sp = Math.hypot(thief.vx, thief.vy); if (sp > 8) { thief.face = Math.atan2(thief.vy, thief.vx); thief.step += dt * sp / 8; }
+    thief.stepT -= dt;
+    if (running && sp > 60 && thief.stepT <= 0) { thief.stepT = 0.26; hearNoise(thief.x, thief.y, CFG.hear); sfx.myStep(0.07); }
+    else if (!running && sp > 20 && thief.stepT <= 0) { thief.stepT = 0.4; sfx.myStep(0.015); }
+  }
+  // coins
+  for (const c of coins) if (!c.got && Math.hypot(c.x - thief.x, c.y - thief.y) < 16 && !thief.hidden) {
+    c.got = true; got++; score += 10 * level; sfx.coin(); popups.push({ x: c.x, y: c.y, text: "+" + 10 * level, t: 0 });
+  }
+  coins = coins.filter((c) => !c.got);
+  // memory of where you've been (dimly remembered layout)
+  mctx.fillStyle = "#fff"; mctx.beginPath(); mctx.arc(thief.x / 6, thief.y / 6, 120 / 6, 0, 7); mctx.fill();
+
+  for (const c of cops) { updateCop(c, dt); if (state !== "play") return; }
+  // heartbeat when an officer is close
+  const near = Math.min(...cops.map((c) => Math.hypot(c.x - thief.x, c.y - thief.y)));
+  beatT -= dt; if (near < 260 && beatT <= 0) { beatT = 0.35 + near / 260 * 0.9; sfx.heart(0.12 * (1 - near / 260) + 0.03); }
+
+  if (!coins.length) levelClear();
+  updateHud();
+}
+let beatT = 0;
+function litBy(c) {
+  if (thief.hidden) return false;
+  const dx = thief.x - c.x, dy = thief.y - c.y, d = Math.hypot(dx, dy);
+  if (d > CFG.range || Math.abs(angDiff(Math.atan2(dy, dx), c.dir)) > CFG.half) return false;
+  return los(c.x, c.y, thief.x, thief.y);
+}
+
+// ---------- caught: the stick ----------
+function caught(c) {
+  if (state !== "play") return;
+  thief.hidden = null;
+  beat = { cop: c, t: 0, hits: 0 };
+  setState("caught"); setMark(c, "!");
+}
+function updateBeat(dt) {
+  beat.t += dt;
+  const c = beat.cop; c.dir = Math.atan2(thief.y - c.y, thief.x - c.x);
+  const d = Math.hypot(thief.x - c.x, thief.y - c.y); if (d > 24) { c.x += (thief.x - c.x) / d * 120 * dt; c.y += (thief.y - c.y) / d * 120 * dt; }
+  const hitAt = [0.45, 0.9, 1.3, 1.7];
+  if (beat.hits < hitAt.length && beat.t > hitAt[beat.hits]) { beat.hits++; sfx.whack(); popups.push({ x: thief.x + rnd(-10, 10), y: thief.y - 18, text: pick(["WHACK!", "THWACK!", "OUCH!", "BONK!"]), t: 0, red: true }); }
+  if (beat.t > 2.4) gameOver();
+}
+function levelClear() {
+  setState("between"); sfx.clear();
+  const clean = !seenThisLevel, bonus = (clean ? 200 : 0) * level + Math.max(0, Math.round((90 + level * 20 - levelT) * 2));
+  score += bonus;
+  if (score > best) { best = score; store.set("lf.best", best); }
+  if (level > bestLevel) { bestLevel = level; store.set("lf.bestLevel", bestLevel); }
+  showCard(`<div class="kicker">Level ${level} cleared</div><h1>Clean <span>job.</span></h1>
+    <div class="rows"><span>Gold taken</span><b>${total}</b><span>Time</span><b>${fmt(levelT)}</b><span>${clean ? "Never seen bonus" : "Spotted"}</span><b>${clean ? "+" + 200 * level : "no bonus"}</b><span>Time bonus</span><b>+${Math.max(0, Math.round((90 + level * 20 - levelT) * 2))}</b><span>Score</span><b>${score}</b></div>
+    <p>The next place is bigger${level + 1 >= 4 ? (level + 1 === 4 ? ", and there are two of them now." : ".") : "."}</p>
+    <button class="go" data-a="next">Next job</button>`);
+  updateHud();
+}
+function gameOver() {
+  if (score > best) { best = score; store.set("lf.best", best); }
+  setState("over"); updateHud();
+  showCard(`<div class="kicker">Busted on level ${level}</div><h1><span class="r">Caught</span> red-handed.</h1>
+    <div class="rows"><span>Gold this level</span><b>${got} / ${total}</b><span>Score</span><b>${score}</b><span>Best score</span><b>${best}</b><span>Best level cleared</span><b>${bestLevel}</b></div>
+    <p>He had a stick. You had a bag of coins. It went about how you'd expect.</p>
+    <button class="go" data-a="replay">Replay</button>`);
+}
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+// ---------- HUD ----------
+const ui = { lv: $("#lv"), coins: $("#coins"), status: $("#status"), best: $("#best"), ov: $("#ov"), card: $("#card"), hide: $("#hide") };
+function updateHud() {
+  ui.lv.textContent = "LEVEL " + level;
+  ui.coins.innerHTML = `${got}<small> / ${total} gold</small>`;
+  ui.best.textContent = "BEST " + best;
+  let st = "UNSEEN", cls = "";
+  if (thief && thief.hidden) { st = "HIDDEN"; cls = "hid"; }
+  if (cops && cops.some((c) => c.state === "investigate" || c.state === "search")) { st = cops.some((c) => c.state === "search") ? "SEARCHING" : "SUSPICIOUS"; cls = "sus"; }
+  if (cops && cops.some((c) => c.state === "chase" || c.knows)) { st = thief.hidden ? "HE SAW YOU HIDE" : "SPOTTED"; cls = "seen"; }
+  if (thief && thief.hidden && cls !== "seen" && cls !== "sus") { st = "HIDDEN"; cls = "hid"; }
+  ui.status.textContent = st; ui.status.className = cls;
+  ui.hide.classList.toggle("avail", !!(thief && (thief.hidden || nearWardrobe())));
+  ui.hide.textContent = thief && thief.hidden ? "OUT" : "HIDE";
+}
+function showCard(h) { ui.card.innerHTML = h; ui.ov.classList.add("show"); }
+function hideCard() { ui.ov.classList.remove("show"); }
+function showTitle() {
+  setState("title");
+  showCard(`<div class="kicker">A job in the dark</div><h1>Light <span>Fingers</span></h1>
+    <p>Grab every coin in the apartment. A policeman is walking the rooms with a torch.</p>
+    <ul>
+      <li>You can only see a little around you. Watch for his torchlight.</li>
+      <li>In his beam you move at <b>half speed</b>. If he sees you, run and break line of sight.</li>
+      <li>Running is loud. He'll come to check the noise.</li>
+      <li>Slip into a <b>wardrobe</b> to hide, but not while he's watching you.</li>
+    </ul>
+    <p>${isTouch ? "Joystick to move, hold RUN, tap HIDE." : "<kbd>WASD</kbd> / arrows move · hold <kbd>Shift</kbd> to run · <kbd>E</kbd> or <kbd>Space</kbd> to hide."}</p>
+    <button class="go" data-a="start">Start the job</button>`);
+}
+ui.ov.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-a]"); if (!b) return;
+  sfx.ok();
+  if (b.dataset.a === "start" || b.dataset.a === "replay") { score = 0; startLevel(1); }
+  if (b.dataset.a === "next") startLevel(level + 1);
+  if (b.dataset.a === "resume") { setState("play"); hideCard(); }
+});
+
+// ======================================================================
+// RENDER
+// ======================================================================
+const FLOOR = { living: "#2a221d", bed: "#221f2e", kitchen: "#1f2429", bath: "#1b262b" };
+const FCOL = { sofa: "#5b4a6b", shelf: "#4a3b2f", plant: "#2f5a3f", counter: "#4d5560", fridge: "#6b7480", table: "#5a4636", tub: "#8c9aa6", sink: "#8c9aa6", bed: "#4a5578", wardrobe: "#5e4733", desk: "#51402f" };
+function visPoly(x, y, a0, a1, range, n) {
+  const pts = [];
+  for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n, d = castRay(x, y, a, range); pts.push([x + Math.cos(a) * d, y + Math.sin(a) * d]); }
+  return pts;
+}
+function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = "#05060b"; ctx.fillRect(0, 0, VW, VH);
+  if (!rooms) return;
+  // camera follows the thief smoothly
+  cam.x += (thief.x - cam.x) * 0.12; cam.y += (thief.y - cam.y) * 0.12;
+  const ox = VW / 2 - cam.x * S, oy = VH / 2 - cam.y * S;
+  ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * ox, DPR * oy);
+
+  // floors
+  for (const r of rooms) { ctx.fillStyle = FLOOR[r.type]; ctx.fillRect(r.x, r.y, r.w, r.h); }
+  ctx.strokeStyle = "rgba(255,255,255,.025)"; ctx.lineWidth = 1;
+  for (const r of rooms) if (r.type === "kitchen" || r.type === "bath") { ctx.beginPath(); for (let x = r.x + 20; x < r.x + r.w; x += 20) { ctx.moveTo(x, r.y); ctx.lineTo(x, r.y + r.h); } for (let y = r.y + 20; y < r.y + r.h; y += 20) { ctx.moveTo(r.x, y); ctx.lineTo(r.x + r.w, y); } ctx.stroke(); }
+  // furniture
+  for (const f of furn) {
+    ctx.fillStyle = "rgba(0,0,0,.35)"; rr(f.x + 2, f.y + 3, f.w, f.h, 4); ctx.fill();
+    ctx.fillStyle = FCOL[f.kind] || "#555"; rr(f.x, f.y, f.w, f.h, f.kind === "plant" ? f.w / 2 : 4); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.08)";
+    if (f.kind === "bed") { const vert = f.h > f.w; rr(vert ? f.x + 5 : f.x + 5, vert ? f.y + 5 : f.y + 5, vert ? f.w - 10 : 16, vert ? 16 : f.h - 10, 3); ctx.fill(); }
+    if (f.kind === "wardrobe") { ctx.fillStyle = "rgba(0,0,0,.3)"; if (f.w > f.h) ctx.fillRect(f.x + f.w / 2 - 0.75, f.y + 2, 1.5, f.h - 4); else ctx.fillRect(f.x + 2, f.y + f.h / 2 - 0.75, f.w - 4, 1.5); }
+    if (f.kind === "sofa") { ctx.fillStyle = "rgba(255,255,255,.06)"; rr(f.x + 4, f.y + 4, f.w - 8, f.h - 8, 3); ctx.fill(); }
+  }
+  // coins
+  for (const c of coins) {
+    const gl = 0.5 + 0.5 * Math.sin(clock * 3 + c.ph);
+    ctx.fillStyle = "#e8b64a"; ctx.beginPath(); ctx.arc(c.x, c.y, 5.5, 0, 7); ctx.fill();
+    ctx.fillStyle = `rgba(255,240,180,${0.5 + gl * 0.5})`; ctx.beginPath(); ctx.arc(c.x - 1.5, c.y - 1.5, 2, 0, 7); ctx.fill();
+  }
+  // walls
+  ctx.strokeStyle = "#b9b4cc"; ctx.lineWidth = WALL; ctx.lineCap = "square";
+  ctx.beginPath(); for (const w of walls) { ctx.moveTo(w.ax, w.ay); ctx.lineTo(w.bx, w.by); } ctx.stroke();
+  // warm torchlight on the floor (under the darkness, so it reads as light)
+  const torches = cops.map((c) => ({ c, poly: visPoly(c.x, c.y, c.dir - CFG.half, c.dir + CFG.half, CFG.range, 34) }));
+  for (const { c, poly } of torches) {
+    const g = ctx.createRadialGradient(c.x, c.y, 10, c.x, c.y, CFG.range);
+    g.addColorStop(0, "rgba(255,214,140,.30)"); g.addColorStop(1, "rgba(255,214,140,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(c.x, c.y); for (const p of poly) ctx.lineTo(p[0], p[1]); ctx.closePath(); ctx.fill();
+  }
+
+  // ---------- darkness: only what you see, what the torches light, and a faint memory ----------
+  const myPoly = visPoly(thief.x, thief.y, -Math.PI, Math.PI, 150, 90);
+  const hs = DPR * 0.5;
+  dctx.setTransform(1, 0, 0, 1, 0, 0); dctx.globalCompositeOperation = "source-over";
+  dctx.fillStyle = "rgba(3,3,8,0.985)"; dctx.fillRect(0, 0, dark.width, dark.height);
+  dctx.setTransform(hs * S, 0, 0, hs * S, hs * ox, hs * oy);
+  dctx.globalCompositeOperation = "destination-out";
+  dctx.globalAlpha = 0.16; dctx.drawImage(memory, 0, 0, AW, AH); dctx.globalAlpha = 1;          // remembered rooms
+  let g = dctx.createRadialGradient(thief.x, thief.y, 20, thief.x, thief.y, 150);
+  g.addColorStop(0, "rgba(0,0,0,.95)"); g.addColorStop(0.6, "rgba(0,0,0,.7)"); g.addColorStop(1, "rgba(0,0,0,0)");
+  dctx.fillStyle = g; dctx.beginPath(); dctx.moveTo(myPoly[0][0], myPoly[0][1]); for (const p of myPoly) dctx.lineTo(p[0], p[1]); dctx.closePath(); dctx.fill();
+  for (const { c, poly } of torches) {
+    g = dctx.createRadialGradient(c.x, c.y, 8, c.x, c.y, CFG.range);
+    g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(0.7, "rgba(0,0,0,.85)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    dctx.fillStyle = g; dctx.beginPath(); dctx.moveTo(c.x, c.y); for (const p of poly) dctx.lineTo(p[0], p[1]); dctx.closePath(); dctx.fill();
+    dctx.beginPath(); dctx.arc(c.x, c.y, 16, 0, 7); dctx.fill();                           // his own hand glow
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(dark, 0, 0, cv.width, cv.height);
+  ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * ox, DPR * oy);
+
+  // noise rings (you can see how loud you are)
+  for (const n of noise) { ctx.strokeStyle = `rgba(255,207,122,${0.22 * (1 - n.t / 0.7)})`; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(n.x, n.y, 14 + n.t / 0.7 * (n.r - 14) * 0.5, 0, 7); ctx.stroke(); }
+  // wardrobe hint
+  const nw = state === "play" && !thief.hidden ? nearWardrobe() : null;
+  if (nw) { ctx.strokeStyle = `rgba(169,188,255,${0.5 + 0.3 * Math.sin(clock * 6)})`; ctx.lineWidth = 2; rr(nw.x - 3, nw.y - 3, nw.w + 6, nw.h + 6, 5); ctx.stroke(); }
+  // officers: lit by their own torch, clearer when you can see them
+  for (const c of cops) {
+    const vis = Math.hypot(c.x - thief.x, c.y - thief.y) < 150 && los(c.x, c.y, thief.x, thief.y) ? 1 : 0.55;
+    drawCop(c, vis);
+  }
+  drawThief();
+  // popups
+  ctx.textAlign = "center";
+  for (const p of popups) { ctx.globalAlpha = 1 - p.t / 1.2; ctx.fillStyle = p.red ? "#ff5a5f" : "#ffd88a"; ctx.font = `800 ${p.red ? 13 : 9}px system-ui`; ctx.fillText(p.text, p.x, p.y - 12 - p.t * 18); }
+  ctx.globalAlpha = 1; ctx.textAlign = "start";
+  // vignette pulse when spotted
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (state === "play" && cops.some((c) => c.state === "chase")) { ctx.fillStyle = `rgba(255,60,70,${0.06 + 0.05 * Math.sin(clock * 10)})`; ctx.fillRect(0, 0, VW, VH); }
+  if (state === "caught") { ctx.fillStyle = `rgba(255,40,50,${Math.max(0, 0.25 - (beat.t % 0.45) * 0.5)})`; ctx.fillRect(0, 0, VW, VH); }
+}
+function drawThief() {
+  const t = thief, x = t.x, y = t.y;
+  if (t.hidden) { ctx.fillStyle = "rgba(169,188,255,.8)"; ctx.font = "800 9px system-ui"; ctx.textAlign = "center"; ctx.fillText("hiding…", t.hidden.x + t.hidden.w / 2, t.hidden.y - 6); ctx.textAlign = "start"; return; }
+  const hurt = state === "caught" ? Math.sin(beat.t * 30) * 2 : 0;
+  ctx.save(); ctx.translate(x + hurt, y); ctx.rotate(t.face);
+  // loot bag gets bigger as you go
+  const bag = 4 + Math.min(6, got / Math.max(1, total) * 6);
+  ctx.fillStyle = "#7a6248"; ctx.beginPath(); ctx.arc(-9, 4, bag, 0, 7); ctx.fill();
+  // feet
+  const sw = Math.sin(t.step) * 3;
+  ctx.fillStyle = "#1a1a22"; ctx.beginPath(); ctx.ellipse(2 + sw, -5, 3.5, 2.5, 0, 0, 7); ctx.ellipse(2 - sw, 5, 3.5, 2.5, 0, 0, 7); ctx.fill();
+  // striped body
+  ctx.fillStyle = "#e8e8f0"; ctx.beginPath(); ctx.arc(0, 0, 9, 0, 7); ctx.fill();
+  ctx.fillStyle = "#1a1a22"; for (let k = -6; k <= 6; k += 4) ctx.fillRect(k - 1, -8, 2, 16);
+  // head with mask band
+  ctx.fillStyle = "#e3b48c"; ctx.beginPath(); ctx.arc(1.5, 0, 5.5, 0, 7); ctx.fill();
+  ctx.fillStyle = "#14141c"; ctx.fillRect(2.5, -5, 2.6, 10); ctx.beginPath(); ctx.arc(-1, 0, 5.2, Math.PI * 0.5, Math.PI * 1.5); ctx.fill();
+  ctx.restore();
+  if (t.lit && state === "play") { ctx.fillStyle = "rgba(255,216,138,.9)"; ctx.font = "800 8px system-ui"; ctx.textAlign = "center"; ctx.fillText("in the light: slowed", x, y - 16); ctx.textAlign = "start"; }
+}
+function drawCop(c, vis) {
+  ctx.globalAlpha = vis;
+  ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.dir);
+  const sw = Math.sin(c.step) * 3.5;
+  ctx.fillStyle = "#0f1424"; ctx.beginPath(); ctx.ellipse(1 + sw, -6, 4, 3, 0, 0, 7); ctx.ellipse(1 - sw, 6, 4, 3, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = "#24345e"; ctx.beginPath(); ctx.arc(0, 0, 10.5, 0, 7); ctx.fill();          // uniform
+  ctx.fillStyle = "#e9c46a"; ctx.beginPath(); ctx.arc(4, -5, 1.8, 0, 7); ctx.fill();            // badge
+  // torch arm
+  ctx.fillStyle = "#24345e"; ctx.fillRect(4, 5, 10, 4); ctx.fillStyle = "#c9c9c9"; ctx.fillRect(12, 4.5, 6, 5); ctx.fillStyle = "#fff4cf"; ctx.fillRect(17.5, 5, 1.5, 4);
+  // stick: on the hip, or swinging when you're caught
+  ctx.save();
+  if (state === "caught" && beat && beat.cop === c) { const ph = (beat.t * 2.3) % 1; ctx.translate(4, -6); ctx.rotate(-1.4 + Math.sin(ph * Math.PI) * 2.2); ctx.fillStyle = "#3a2a1a"; ctx.fillRect(0, -1.5, 20, 3); }
+  else { ctx.fillStyle = "#3a2a1a"; ctx.fillRect(-8, -10, 14, 2.5); }
+  ctx.restore();
+  // cap
+  ctx.fillStyle = "#121a33"; ctx.beginPath(); ctx.arc(0, 0, 6.5, 0, 7); ctx.fill(); ctx.fillStyle = "#0b1022"; ctx.fillRect(4, -5, 4, 10);
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  if (c.markT > 0 || c.state === "chase" || c.state === "search" || c.knows) {
+    const m = c.state === "chase" || c.knows ? "!" : c.state === "search" || c.state === "investigate" ? "?" : c.mark;
+    if (m) { ctx.font = "900 15px system-ui"; ctx.textAlign = "center"; ctx.fillStyle = m === "!" ? "#ff5a5f" : "#ffd88a"; ctx.fillText(m, c.x, c.y - 17 - Math.abs(Math.sin(clock * 6)) * 2); ctx.textAlign = "start"; }
+  }
+}
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) { const dt = Math.min(0.033, (now - last) / 1000); last = now; update(dt); render(); requestAnimationFrame(frame); }
+resize();
+// a quiet apartment behind the title card
+CFG = levelCfg(1); genApartment(1); { const r = rooms[0], p = freeSpot(r); thief = { x: p.x, y: p.y, vx: 0, vy: 0, face: 0, step: 0, hidden: null, lit: false }; }
+cops = [makeCop(rooms[rooms.length - 1].cx, rooms[rooms.length - 1].cy)]; coins = []; memory = document.createElement("canvas"); memory.width = 4; memory.height = 4; mctx = memory.getContext("2d");
+cam.x = thief.x; cam.y = thief.y;
+updateHud(); showTitle(); requestAnimationFrame(frame);
+setInterval(() => { if (state === "title" && cops[0]) { const c = cops[0]; c.dir += 0.02; } }, 16);
+
+// ======================================================================
+// INPUT: keyboard, and a real joystick + RUN + HIDE on phones
+// ======================================================================
+const KM = { KeyW: "w", ArrowUp: "w", KeyA: "a", ArrowLeft: "a", KeyS: "s", ArrowDown: "s", KeyD: "d", ArrowRight: "d" };
+addEventListener("keydown", (e) => {
+  if (KM[e.code] || e.code === "Space") e.preventDefault();
+  if (e.code === "KeyM") return toggleSnd();
+  if (e.code === "ShiftLeft" || e.code === "ShiftRight") keys.shift = true;
+  if (KM[e.code]) keys[KM[e.code]] = true;
+  if ((e.code === "KeyE" || e.code === "Space") && !e.repeat) {
+    if (state === "play") toggleHide();
+    else if (ui.ov.classList.contains("show")) { const b = ui.card.querySelector("[data-a]"); if (b) b.click(); }
+  }
+  if (e.code === "Enter" && ui.ov.classList.contains("show")) { const b = ui.card.querySelector("[data-a]"); if (b) b.click(); }
+  if ((e.code === "KeyP" || e.code === "Escape") && state === "play") pause();
+});
+addEventListener("keyup", (e) => { if (KM[e.code]) keys[KM[e.code]] = false; if (e.code === "ShiftLeft" || e.code === "ShiftRight") keys.shift = false; });
+addEventListener("blur", () => { for (const k in keys) keys[k] = false; input.x = input.y = 0; input.run = false; });
+function pause() { if (state !== "play") return; setState("paused"); showCard(`<div class="kicker">Paused</div><h1>Holding your breath…</h1><button class="go" data-a="resume">Resume</button>`); }
+document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+
+const joy = $("#joy"), knob = $("#knob"), runB = $("#run"), hideB = $("#hide");
+let joyId = null;
+function joyMove(e) {
+  const r = joy.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, max = r.width * 0.36;
+  let dx = e.clientX - cx, dy = e.clientY - cy; const d = Math.hypot(dx, dy);
+  if (d > max) { dx *= max / d; dy *= max / d; }
+  knob.style.transform = `translate(${dx}px, ${dy}px)`;
+  const m = Math.min(1, d / max); input.x = m < 0.15 ? 0 : dx / max; input.y = m < 0.15 ? 0 : dy / max;
+}
+joy.addEventListener("pointerdown", (e) => { e.preventDefault(); joyId = e.pointerId; try { joy.setPointerCapture(e.pointerId); } catch (_) {} joyMove(e); });
+joy.addEventListener("pointermove", (e) => { if (e.pointerId === joyId) joyMove(e); });
+const joyEnd = (e) => { if (e.pointerId !== joyId) return; joyId = null; input.x = input.y = 0; knob.style.transform = ""; };
+joy.addEventListener("pointerup", joyEnd); joy.addEventListener("pointercancel", joyEnd);
+runB.addEventListener("pointerdown", (e) => { e.preventDefault(); try { runB.setPointerCapture(e.pointerId); } catch (_) {} input.run = true; runB.classList.add("on"); });
+const runEnd = () => { input.run = false; runB.classList.remove("on"); };
+runB.addEventListener("pointerup", runEnd); runB.addEventListener("pointercancel", runEnd);
+hideB.addEventListener("pointerdown", (e) => { e.preventDefault(); toggleHide(); updateHud(); });
+
+if (location.search.includes("debug")) window.__lf = {
+  get: () => ({ state, level, got, total, rooms: rooms.length, doors: doors.length, walls: walls.length, wardrobes: wardrobes.length, cops: cops.map((c) => c.state), hidden: !!thief.hidden, lit: thief.lit, x: Math.round(thief.x), y: Math.round(thief.y) }),
+  world: () => ({ AW, AH, rooms, doors, walls, furn, wardrobes, coins }), thief: () => thief, cops: () => cops, input, keys, toggleHide, startLevel, los, canSee, roomAt,
+  cfg: () => CFG,
+};
+})();
+</script>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
