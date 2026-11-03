@@ -21,6 +21,7 @@ Every game is a single self-contained HTML file. No installs, no build step, no 
 | [Coop Catch](https://sakhadib.github.io/games/coop-catch/) | 2D arcade | Hens on a rail lay eggs; run with your basket to catch them, dodge rotten eggs, and grab booster eggs. Five lives. |
 | [Light Fingers](https://sakhadib.github.io/games/light-fingers/) | 2D stealth | Steal every coin in a dark apartment while a policeman sweeps his torch. In the light you're slowed. Run, hide in wardrobes, don't get caught. |
 | [Rotorlight](https://sakhadib.github.io/games/rotorlight/) | 2D flying | A rescue helicopter in a pitch-dark cave. Land on ledges to pick up survivors, dodge slow bullets and leaping cave dinos, and fly out the far end. Six cave themes; progress is saved. |
+| [Shoktishali Avro](https://sakhadib.github.io/games/shoktishali-avro/) | 2D platformer | Swing rope to rope through a monster cave, find the crying girl and carry her home. Dinos, dragons, gorillas and bats, and a new little story every level. Idea by Adib's little sister. |
 
 ## How it works
 
