@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Rotorlight · helicopter cave rescue | The Oven</title>
-<meta name="description" content="A free helicopter cave rescue game in your browser. Fly through a dark cave with only your searchlight, land on ledges to rescue stranded people, dodge gunmen's slow bullets, and fly out the far end. No ads, works on mobile.">
+<meta name="description" content="A free helicopter cave rescue game in your browser. Fly through a dark cave with only your searchlight, land on ledges to rescue stranded people, dodge gunmen's slow bullets and leaping cave dinos, and fly out the far end. No ads, works on mobile.">
 <meta name="keywords" content="helicopter game, cave flying game, rescue helicopter, choplifter style, cave copter, physics flying game, browser game, no ads">
 <meta name="author" content="Sakhawat Adib">
 <link rel="canonical" href="https://sakhadib.github.io/games/rotorlight/">
@@ -18,7 +18,7 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://sakhadib.github.io/games/assets/shots/rotorlight.jpg">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Rotorlight","url":"https://sakhadib.github.io/games/rotorlight/","description":"A helicopter cave rescue game. Fly through a dark cave with only your searchlight, land on ledges to rescue stranded people, dodge gunmen's slow bullets, and fly out the far end.","image":"https://sakhadib.github.io/games/assets/shots/rotorlight.jpg","genre":["Arcade","Flying"],"gamePlatform":["Web browser","Mobile","Desktop"],"applicationCategory":"Game","operatingSystem":"Any","playMode":"SinglePlayer","isAccessibleForFree":true,"inLanguage":"en","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Sakhawat Adib","url":"https://portfolio.sakhawatadib.com"},"isPartOf":{"@type":"WebSite","name":"The Oven","url":"https://sakhadib.github.io/games/"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Rotorlight","url":"https://sakhadib.github.io/games/rotorlight/","description":"A helicopter cave rescue game. Fly through a dark cave with only your searchlight, land on ledges to rescue stranded people, dodge gunmen's slow bullets and leaping cave dinos, and fly out the far end.","image":"https://sakhadib.github.io/games/assets/shots/rotorlight.jpg","genre":["Arcade","Flying"],"gamePlatform":["Web browser","Mobile","Desktop"],"applicationCategory":"Game","operatingSystem":"Any","playMode":"SinglePlayer","isAccessibleForFree":true,"inLanguage":"en","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Sakhawat Adib","url":"https://portfolio.sakhawatadib.com"},"isPartOf":{"@type":"WebSite","name":"The Oven","url":"https://sakhadib.github.io/games/"}}</script>
 <meta name="theme-color" content="#06070c">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%2306070c'/><path d='M8 8 L16 12 L16 16 L10 16 Z' fill='%23ffe3a3' opacity='.55'/><rect x='2' y='4' width='10' height='1.2' fill='%23c9d0e0'/><ellipse cx='6.5' cy='7.5' rx='4' ry='2.2' fill='%23e07a5f'/><rect x='1' y='7' width='3' height='1' fill='%23e07a5f'/></svg>">
 <style>
@@ -48,6 +48,7 @@
   .rows { display: grid; grid-template-columns: 1fr auto; gap: 5px 14px; text-align: left; margin: 12px auto; max-width: 240px; font-size: 14px; color: #b5b8cc; }
   .rows b { color: var(--ink); text-align: right; }
   .go { display: inline-block; margin-top: 14px; background: var(--warm); color: #14131e; font-weight: 800; padding: 13px 22px; border-radius: 16px; cursor: pointer; border: 0; font-size: 15px; }
+  .go.ghost { background: transparent; color: var(--muted); border: 1px solid rgba(255,255,255,.14); margin-left: 6px; font-weight: 700; }
   kbd { font: 700 12px system-ui; background: rgba(255,255,255,.1); border-radius: 6px; padding: 1px 6px; color: var(--ink); }
   .tc { display: none; position: fixed; z-index: 4; touch-action: none; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); color: var(--ink); font: 800 14px system-ui; letter-spacing: 1px; }
   body.touch .tc { display: grid; place-items: center; }
@@ -136,6 +137,9 @@ const sfx = {
   land() { tone(180, 0.12, "sine", 0.08, 0.7); },
   clear() { [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, "triangle", 0.06, 0, i * 0.1)); },
   ok() { tone(660, 0.08, "triangle", 0.06); },
+  growl() { tone(110, 0.6, "sawtooth", 0.07, 0.6); noise(0.5, 0.08, 500); },
+  chomp() { tone(300, 0.12, "square", 0.05, 0.5); },
+  thud() { noise(0.25, 0.15, 300); },
 };
 const sndBtn = $("#snd");
 function syncSnd() { sndBtn.textContent = muted ? "×" : "♪"; sndBtn.style.opacity = muted ? 0.5 : 1; }
@@ -161,7 +165,19 @@ function worldPts(h, pts) {
 // CAVE GENERATION with fairness guarantees
 // ======================================================================
 const DX = 16, WORLD_H = 620;
-let LX, N, ceil, flr, pads, guns, exitX, startPad;
+let LX, N, ceil, flr, pads, guns, dinos, decor, exitX, startPad;
+// every level is a different cave: its own colours and its own little details on the rock
+const THEMES = [
+  { name: "Blue Basalt",    air: "#1a2036", rock: ["#07080c", "#0a0b10"], edge: "#4b5478", sheen: "110,125,175", deco: "drip",    dc: "150,180,230", dino: ["#5fae7b", "#f2b36b"] },
+  { name: "Glowworm Grotto", air: "#12251e", rock: ["#050907", "#08100c"], edge: "#3f6b52", sheen: "110,190,140", deco: "worm",    dc: "150,255,190", dino: ["#d98a4e", "#f6d58a"] },
+  { name: "Crystal Hollow", air: "#211936", rock: ["#08060e", "#0b0912"], edge: "#6b4f9a", sheen: "170,130,230", deco: "crystal", dc: "200,150,255", dino: ["#4fb3a9", "#f2c66b"] },
+  { name: "Ember Deep",     air: "#2a1610", rock: ["#0b0605", "#100807"], edge: "#8a4a2c", sheen: "230,120,70",  deco: "ember",   dc: "255,140,70",  dino: ["#7f8fd6", "#f6c48a"] },
+  { name: "Frost Vault",    air: "#132634", rock: ["#05090d", "#070c11"], edge: "#6fa2c0", sheen: "170,220,250", deco: "ice",     dc: "190,235,255", dino: ["#e0785f", "#ffd9a8"] },
+  { name: "Amber Tomb",     air: "#2a2214", rock: ["#0b0905", "#0f0c07"], edge: "#8a7448", sheen: "230,200,130", deco: "bone",    dc: "240,225,190", dino: ["#9a6fc4", "#f2d08a"] },
+];
+// the darkness itself carries the cave's colour, so each level reads differently at a glance
+for (const t of THEMES) { const n = parseInt(t.air.slice(1), 16), k = 0.55; t.shade = `rgba(${((n >> 16) & 255) * k | 0},${((n >> 8) & 255) * k | 0},${(n & 255) * k | 0},0.8)`; }
+let TH = THEMES[0];
 const ceilAt = (x) => { const f = clamp(x / DX, 0, N), i = Math.min(N - 1, Math.floor(f)), t = f - i; return ceil[i] + (ceil[i + 1] - ceil[i]) * t; };
 const floorAt = (x) => { const f = clamp(x / DX, 0, N), i = Math.min(N - 1, Math.floor(f)), t = f - i; return flr[i] + (flr[i + 1] - flr[i]) * t; };
 const solid = (x, y) => y <= ceilAt(x) || y >= floorAt(x);
@@ -231,6 +247,24 @@ function genCave(L) {
     }
     if (!fixed) break;
   }
+  // cave dinos: they sleep in wide hollows, away from ledges. Fly low over one and it wakes, warns, and leaps.
+  // a leap never reaches higher than 80 below the roof, so you can always slip over the top
+  dinos = [];
+  const wantD = Math.min(6, 1 + Math.floor(L / 2));
+  for (let tries = 0; dinos.length < wantD && tries < 500; tries++) {
+    const x = rnd(800, exitX - 260), i = Math.round(x / DX);
+    if (pads.some((p) => x > p.x0 - 240 && x < p.x1 + 240)) continue;
+    if (dinos.some((d) => Math.abs(d.x - x) < 420)) continue;
+    let y = 0; for (let j = i - 3; j <= i + 3; j++) { y = Math.max(y, flr[j]); }
+    let roof = -Infinity; for (let j = i - 5; j <= i + 5; j++) roof = Math.max(roof, ceil[j]);
+    const jump = Math.min(150, y - roof - 80 - 55);       // leap height: snout tip stays 80 below the roof
+    if (jump < 70) continue;
+    for (let j = i - 3; j <= i + 3; j++) flr[j] = y;
+    dinos.push({ x: i * DX, y, jump, st: "sleep", t: rnd(0, 3), off: 0, vy: 0, face: Math.random() < 0.5 ? 1 : -1, cool: 0 });
+  }
+  // little details on the rock for this cave's theme (just for looks: nothing here sticks out far enough to hit)
+  decor = [];
+  for (let i = 18; i < N - 2; i += 2) if (Math.random() < 0.28) decor.push({ i, top: Math.random() < 0.6, s: rnd(0.6, 1.2), p: rnd(0, 6) });
   // gunmen: on flat bits of floor, far from pads, and never able to see a pad or the start
   guns = [];
   const want = L === 1 ? 2 : Math.min(12, 2 + Math.floor(L * 1.4));
@@ -240,6 +274,7 @@ function genCave(L) {
     const x = rnd(600, exitX - 200), i = Math.round(x / DX);
     if (pads.some((p) => x > p.x0 - 170 && x < p.x1 + 170)) continue;
     if (guns.some((g) => Math.abs(g.x - x) < 220)) continue;
+    if (dinos.some((d) => Math.abs(d.x - x) < 200)) continue;
     const y = Math.max(flr[i - 1], flr[i], flr[i + 1]);
     const gx = i * DX, eye = y - 14;
     if (watchPts.some(([px, py]) => Math.hypot(px - gx, py - eye) < reach && los(gx, eye, px, py))) continue;
@@ -262,12 +297,13 @@ const keys = {}, touch = { up: false, fwd: false, back: false };
 function cfg(L) { return { bullet: Math.min(175, 70 + L * 11), aim: Math.max(0.28, 0.6 - L * 0.03), range: Math.min(460, 300 + L * 18), cool: Math.max(0.35, 1.0 - L * 0.06) }; }
 let CFG;
 function startLevel(L) {
-  level = L; CFG = cfg(L);
+  level = L; CFG = cfg(L); TH = THEMES[(L - 1) % THEMES.length];
+  store.set("rl.level", L); store.set("rl.levelScore", score);   // a crash brings you back here, not to level 1
   genCave(L);
   need = pads.reduce((a, p) => a + p.people, 0); rescued = 0; levelT = 0; parts = []; runners = [];
   heli = { x: 7 * DX, y: startPad.y - SKID_Y, vx: 0, vy: 0, tilt: 0, landed: startPad, rotor: 0, crashed: false };
   cam.x = heli.x; cam.y = heli.y;
-  setState("play"); hideCard(); say(L === 1 ? "Hold ↑ to lift off. Find the flares." : `Level ${L}: ${need} people waiting.`, 3.5); updateHud();
+  setState("play"); hideCard(); say(L === 1 ? "Hold ↑ to lift off. Find the flares." : `${TH.name}: ${need} people waiting.`, 3.5); updateHud();
 }
 function setState(s) { state = s; stateT = 0; }
 function say(t, d = 2.5) { $("#msg").textContent = t; msgT = d; }
@@ -297,7 +333,7 @@ function update(dt) {
         say(p.people ? `Boarding… ${p.people} more here` : rescued >= need ? "Everyone's aboard! Fly to the far end." : "All aboard from this ledge. Lift off!", 2.2); }
     }
     if (up) { h.landed = null; h.vy = -40; h.y -= 1; }
-    else { updateGuns(dt); updateHud(); return; }
+    else { updateGuns(dt); updateDinos(dt); updateHud(); return; }
   }
 
   // tilt: forward/back keys lean the body, otherwise it settles level
@@ -332,6 +368,7 @@ function update(dt) {
     h.x = exitX + 40; h.vx = Math.min(0, h.vx);
   } else h.warned = false;
   updateGuns(dt);
+  if (state === "play") updateDinos(dt);
   updateHud();
 }
 
@@ -363,6 +400,35 @@ function updateGuns(dt) {
   }
 }
 
+// ---------- cave dinos: sleep → wake (a roar and a warning) → leap straight up → back to sleep ----------
+const DINO_G = 900;
+function dinoParts(d) {   // body, head and snout as circles, for collision
+  const y = d.y - d.off, up = d.st === "jump";
+  return up ? [[d.x, y - 14, 15], [d.x + d.face * 4, y - 34, 10], [d.x + d.face * 7, y - 46, 7]]
+            : [[d.x - d.face * 4, y - 11, 16], [d.x + d.face * 15, y - 16, 9]];
+}
+function updateDinos(dt) {
+  const h = heli;
+  for (const d of dinos) {
+    d.t += dt; d.cool = Math.max(0, d.cool - dt);
+    if (d.st === "sleep") {
+      if (d.cool <= 0 && !h.landed && Math.abs(h.x - d.x) < 150 && h.y < d.y && h.y > d.y - 270) {
+        d.st = "alert"; d.t = 0; d.face = h.x > d.x ? 1 : -1; sfx.growl();
+      }
+    } else if (d.st === "alert") {
+      if (d.t > 0.75) { d.st = "jump"; d.t = 0; d.vy = -Math.sqrt(2 * DINO_G * d.jump); sfx.chomp(); }
+    } else if (d.st === "jump") {
+      d.vy += DINO_G * dt; d.off -= d.vy * dt;
+      if (d.off <= 0) { d.off = 0; d.st = "rest"; d.t = 0; sfx.thud(); for (let k = 0; k < 8; k++) parts.push({ x: d.x + rnd(-18, 18), y: d.y - 2, vx: rnd(-70, 70), vy: rnd(-90, -20), life: 0.5, c: "#8a8070" }); }
+    } else if (d.st === "rest" && d.t > 1.4) { d.st = "sleep"; d.t = 0; d.cool = 1.6; }
+    // bite check
+    if (state === "play") {
+      const pts = worldPts(h, ALL_PTS);
+      for (const [cx, cy, r] of dinoParts(d)) if (pts.some(([x, y]) => (x - cx) ** 2 + (y - cy) ** 2 < r * r)) return crash(d.st === "sleep" ? "You bumped a sleeping dino. It bit!" : "A cave dino chomped you!");
+    }
+  }
+}
+
 function crash(why) {
   if (state !== "play") return;
   heli.crashed = true; setState("crashed"); rotorSound(false); sfx.crash(); say(why, 3);
@@ -374,10 +440,11 @@ function levelClear() {
   const bonus = Math.max(0, Math.round((60 + level * 25 - levelT) * 5));
   score += 250 * level + bonus;
   if (level > bestLevel) { bestLevel = level; store.set("rl.bestLevel", bestLevel); }
+  store.set("rl.level", level + 1); store.set("rl.levelScore", score);
   if (score > best) { best = score; store.set("rl.best", best); }
   showCard(`<div class="kicker">Level ${level} complete</div><h1>Everyone's <span>out.</span></h1>
     <div class="rows"><span>Rescued</span><b>${rescued}</b><span>Time</span><b>${fmt(levelT)}</b><span>Time bonus</span><b>+${bonus}</b><span>Score</span><b>${score}</b></div>
-    <p>The next cave is longer, with more people and more gunmen.</p>
+    <p>Next up: <b style="color:var(--warm)">${THEMES[level % THEMES.length].name}</b>. Longer, with more people, gunmen and dinos.</p>
     <button class="go" data-a="next">Next cave</button>`);
   updateHud();
 }
@@ -386,7 +453,7 @@ function gameOver() {
   setState("over");
   showCard(`<div class="kicker">${heli.why || "Crashed"}</div><h1><span class="r">Crashed</span> on level ${level}.</h1>
     <div class="rows"><span>Rescued this level</span><b>${rescued} / ${need}</b><span>Score</span><b>${score}</b><span>Best score</span><b>${best}</b><span>Best level cleared</span><b>${bestLevel}</b></div>
-    <button class="go" data-a="replay">Replay</button>`);
+    <button class="go" data-a="replay">Replay level ${level}</button>${level > 1 ? `<button class="go ghost" data-a="reset">Start over</button>` : ""}`);
   updateHud();
 }
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
@@ -400,6 +467,7 @@ function updateHud() {
 const ov = $("#ov"), card = $("#card");
 function showCard(h) { card.innerHTML = h; ov.classList.add("show"); }
 function hideCard() { ov.classList.remove("show"); }
+const savedLevel = () => Math.max(1, store.get("rl.level", 1) | 0);
 function showTitle() {
   setState("title");
   showCard(`<div class="kicker">Search and rescue</div><h1>Rotor<span>light</span></h1>
@@ -408,13 +476,16 @@ function showTitle() {
       <li>Touch any rock and you crash. The rotor counts.</li>
       <li>Land on the flat ledge, slow and level. Stay put while they board.</li>
       <li>Gunmen aim, then fire one slow, straight shot. While it's in the air they can't fire again. You can't shoot back.</li>
+    <li>Cave dinos sleep in the hollows. Fly low over one and it wakes up and leaps. Stay high, or zip past.</li>
     </ul>
     <p>${isTouch ? "LIFT to climb. ◀ ▶ tilt to fly back and forth." : "<kbd>↑</kbd> lift · <kbd>→</kbd> tilt forward · <kbd>←</kbd> tilt back"}</p>
-    <button class="go" data-a="start">Take off</button>`);
+    ${savedLevel() > 1 ? `<button class="go" data-a="start">Continue · level ${savedLevel()}</button><button class="go ghost" data-a="reset">Start over</button>` : `<button class="go" data-a="start">Take off</button>`}`);
 }
 ov.addEventListener("click", (e) => {
   const b = e.target.closest("[data-a]"); if (!b) return; sfx.ok();
-  if (b.dataset.a === "start" || b.dataset.a === "replay") { score = 0; startLevel(1); }
+  if (b.dataset.a === "start") { score = store.get("rl.levelScore", 0); startLevel(savedLevel()); }
+  if (b.dataset.a === "replay") { score = store.get("rl.levelScore", 0); startLevel(level); }
+  if (b.dataset.a === "reset") { score = 0; startLevel(1); }
   if (b.dataset.a === "next") startLevel(level + 1);
   if (b.dataset.a === "resume") { setState("play"); hideCard(); }
 });
@@ -437,14 +508,14 @@ function render() {
   const x0 = Math.max(0, Math.floor((cam.x - viewW / 2) / DX) - 2), x1 = Math.min(N, Math.ceil((cam.x + viewW / 2) / DX) + 2);
 
   // open air past the exit and a far, dim cave wall behind everything
-  ctx.fillStyle = "#1a2036"; ctx.fillRect(x0 * DX, -200, (x1 - x0) * DX, WORLD_H + 400);
+  ctx.fillStyle = TH.air; ctx.fillRect(x0 * DX, -200, (x1 - x0) * DX, WORLD_H + 400);
   if (x1 * DX > exitX - 400) { const g = ctx.createLinearGradient(exitX - 200, 0, LX, 0); g.addColorStop(0, "rgba(40,50,90,0)"); g.addColorStop(1, "rgba(60,75,130,.6)"); ctx.fillStyle = g; ctx.fillRect(exitX - 200, -200, LX - exitX + 400, WORLD_H + 400); }
   // rock
-  const rock = ctx.createLinearGradient(0, 0, 0, WORLD_H); rock.addColorStop(0, "#07080c"); rock.addColorStop(1, "#0a0b10");
+  const rock = ctx.createLinearGradient(0, 0, 0, WORLD_H); rock.addColorStop(0, TH.rock[0]); rock.addColorStop(1, TH.rock[1]);
   ctx.fillStyle = rock;
   ctx.beginPath(); ctx.moveTo(x0 * DX, -400); for (let i = x0; i <= x1; i++) ctx.lineTo(i * DX, ceil[i]); ctx.lineTo(x1 * DX, -400); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(x0 * DX, WORLD_H + 400); for (let i = x0; i <= x1; i++) ctx.lineTo(i * DX, flr[i]); ctx.lineTo(x1 * DX, WORLD_H + 400); ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = "#4b5478"; ctx.lineWidth = 2;
+  ctx.strokeStyle = TH.edge; ctx.lineWidth = 2;
   ctx.beginPath(); for (let i = x0; i <= x1; i++) i === x0 ? ctx.moveTo(i * DX, ceil[i]) : ctx.lineTo(i * DX, ceil[i]); ctx.stroke();
   ctx.beginPath(); for (let i = x0; i <= x1; i++) i === x0 ? ctx.moveTo(i * DX, flr[i]) : ctx.lineTo(i * DX, flr[i]); ctx.stroke();
   // pads: marked ledges
@@ -460,11 +531,12 @@ function render() {
   runners = runners.filter((r) => r.t < 0.45);
   // gunmen
   for (const g of guns) { if (g.x < x0 * DX - 20 || g.x > x1 * DX + 20) continue; drawGunman(g); }
+  for (const d of dinos) { if (d.x < x0 * DX - 60 || d.x > x1 * DX + 60) continue; drawDino(d); }
 
   // ---------- darkness: searchlight, cabin glow, flares, the exit's moonlight ----------
   const hs = DPR * 0.5;
   dctx.setTransform(1, 0, 0, 1, 0, 0); dctx.globalCompositeOperation = "source-over";
-  dctx.fillStyle = "rgba(2,2,6,0.8)"; dctx.fillRect(0, 0, dark.width, dark.height);
+  dctx.fillStyle = TH.shade; dctx.fillRect(0, 0, dark.width, dark.height);
   dctx.setTransform(hs * S, 0, 0, hs * S, hs * ox, hs * oy); dctx.globalCompositeOperation = "destination-out";
   const beam = !h.crashed ? searchlight(h) : null;
   if (beam) {
@@ -476,12 +548,22 @@ function render() {
   for (const g of guns) { if (g.aimT > 0 || g.flash > 0) softHole(g.x, g.eye, g.flash > 0 ? 70 : 26, 0.8); if (g.bullet) softHole(g.bullet.x, g.bullet.y, 22, 0.9); }
   softHole(LX - 40, WORLD_H / 2 - 40, 520, 0.55);
   for (const p of parts) softHole(p.x, p.y, 10, 0.6);
+  for (const d of dinos) if (d.x > x0 * DX - 60 && d.x < x1 * DX + 60) softHole(d.x, d.y - 18 - d.off, d.st === "sleep" ? 34 : 60, d.st === "sleep" ? 0.35 : 0.7);
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(dark, 0, 0, cv.width, cv.height);
   ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * ox, DPR * oy);
   // faint wet sheen on the rock edges, so the cave's shape reads even in the dark
-  ctx.strokeStyle = "rgba(110,125,175,.2)"; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = `rgba(${TH.sheen},.2)`; ctx.lineWidth = 1.5;
   ctx.beginPath(); for (let i = x0; i <= x1; i++) i === x0 ? ctx.moveTo(i * DX, ceil[i]) : ctx.lineTo(i * DX, ceil[i]); ctx.stroke();
   ctx.beginPath(); for (let i = x0; i <= x1; i++) i === x0 ? ctx.moveTo(i * DX, flr[i]) : ctx.lineTo(i * DX, flr[i]); ctx.stroke();
+
+  drawDecor(x0, x1);
+  for (const d of dinos) {
+    if (d.x < x0 * DX - 60 || d.x > x1 * DX + 60) continue;
+    if (d.st === "sleep") { ctx.fillStyle = "rgba(220,230,255,.55)"; ctx.font = "700 9px system-ui";
+      for (let k = 0; k < 3; k++) { const ph = (d.t * 0.6 + k / 3) % 1; ctx.globalAlpha = Math.sin(ph * Math.PI) * 0.8; ctx.fillText("z", d.x + d.face * 14 + ph * 10, d.y - 28 - ph * 22); } ctx.globalAlpha = 1; }
+    if (d.st === "alert") { ctx.fillStyle = "#ffd98a"; ctx.font = "900 16px system-ui"; ctx.textAlign = "center"; ctx.fillText("!", d.x + d.face * 12, d.y - 38 - Math.abs(Math.sin(d.t * 18)) * 3); ctx.textAlign = "start"; }
+    if (d.st !== "sleep") { const [hx, hy] = dinoParts(d)[1]; ctx.fillStyle = "#ffe066"; ctx.beginPath(); ctx.arc(hx + d.face * 2, hy - 3, 1.6, 0, 7); ctx.fill(); }
+  }
 
   // things that glow above the dark
   if (beam) { const g = ctx.createRadialGradient(beam.x, beam.y, 4, beam.x, beam.y, 300); g.addColorStop(0, "rgba(255,227,163,.16)"); g.addColorStop(1, "rgba(255,227,163,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(beam.x, beam.y); for (const p of beam.pts) ctx.lineTo(p[0], p[1]); ctx.closePath(); ctx.fill(); }
@@ -554,6 +636,62 @@ function drawPerson(x, y, ph, running) {
   ctx.strokeStyle = "#6f8fb0"; ctx.lineWidth = 1.4; const w = Math.sin(clock * 6 + ph) * 0.8;
   ctx.beginPath(); ctx.moveTo(x, y - 9); ctx.lineTo(x + 4 + w, y - 15 - w); ctx.moveTo(x, y - 9); ctx.lineTo(x - 3, y - 6); ctx.stroke();
 }
+function drawDino(d) {
+  const [body, belly] = TH.dino, f = d.face, x = d.x, y = d.y - d.off;
+  ctx.save(); ctx.translate(x, y); ctx.scale(f, 1);
+  if (d.st === "jump") {
+    // stretched up, jaws open
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.moveTo(-6, -4); ctx.quadraticCurveTo(-24, 6, -30, 2); ctx.quadraticCurveTo(-18, -2, -10, -12); ctx.fill();   // tail
+    ctx.beginPath(); ctx.ellipse(0, -14, 13, 16, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(4, -34, 9, 11, 0.2, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(4, -42); ctx.lineTo(16, -54); ctx.lineTo(13, -40); ctx.fill();   // upper jaw
+    ctx.beginPath(); ctx.moveTo(8, -34); ctx.lineTo(18, -40); ctx.lineTo(10, -30); ctx.fill();   // lower jaw
+    ctx.fillStyle = "#fff"; for (let k = 0; k < 3; k++) { ctx.beginPath(); ctx.moveTo(8 + k * 2.6, -44 - k * 3); ctx.lineTo(10 + k * 2.6, -41 - k * 3); ctx.lineTo(11 + k * 2.6, -45 - k * 3); ctx.fill(); }
+    ctx.fillStyle = belly; ctx.beginPath(); ctx.ellipse(4, -12, 6, 11, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = body; ctx.fillRect(-7, -2, 4, 6); ctx.fillRect(3, -2, 4, 6);   // dangling legs
+  } else {
+    const breathe = d.st === "sleep" ? Math.sin(d.t * 2) * 1.2 : 0, up = d.st === "alert" ? 4 : 0;
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.moveTo(-14, -6); ctx.quadraticCurveTo(-30, -2, -36, 0); ctx.quadraticCurveTo(-24, 2, -12, 0); ctx.fill();   // tail
+    ctx.beginPath(); ctx.ellipse(-4, -11, 17, 11 + breathe, 0, 0, 7); ctx.fill();                                                 // body
+    for (let k = 0; k < 4; k++) { ctx.beginPath(); ctx.moveTo(-14 + k * 6, -19 - breathe); ctx.lineTo(-11 + k * 6, -25 - breathe); ctx.lineTo(-8 + k * 6, -19 - breathe); ctx.fill(); }   // back spikes
+    ctx.beginPath(); ctx.ellipse(15, -14 - up, 9, 7, d.st === "alert" ? -0.3 : 0.15, 0, 7); ctx.fill();                          // head
+    ctx.fillRect(-12, -3, 5, 3); ctx.fillRect(3, -3, 5, 3);                                                                       // feet
+    ctx.fillStyle = belly; ctx.beginPath(); ctx.ellipse(-2, -6, 11, 4, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = "#11131a"; ctx.lineWidth = 1.2; ctx.beginPath();
+    if (d.st === "sleep") { ctx.moveTo(15, -16); ctx.quadraticCurveTo(17, -14, 19, -16); }   // closed eye
+    else { ctx.arc(17, -17 - up, 1.8, 0, 7); }
+    ctx.stroke();
+    ctx.fillStyle = "#11131a"; ctx.fillRect(21, -13 - up, 2, 1);   // nostril
+  }
+  ctx.restore();
+}
+function drawDecor(x0, x1) {
+  const c = TH.dc;
+  for (const d of decor) {
+    if (d.i < x0 || d.i > x1) continue;
+    const x = d.i * DX + 8, y = d.top ? (ceil[d.i] + ceil[d.i + 1]) / 2 : (flr[d.i] + flr[d.i + 1]) / 2, s = d.s, dir = d.top ? 1 : -1;
+    switch (TH.deco) {
+      case "worm":   // glowworm threads hanging from the roof
+        if (!d.top) break; ctx.strokeStyle = `rgba(${c},.18)`; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 6 * s); ctx.stroke();
+        ctx.fillStyle = `rgba(${c},${0.5 + 0.4 * Math.sin(clock * 2 + d.p)})`; ctx.beginPath(); ctx.arc(x, y + 6 * s, 1.4, 0, 7); ctx.fill(); break;
+      case "crystal":
+        ctx.fillStyle = `rgba(${c},${0.35 + 0.15 * Math.sin(clock * 1.5 + d.p)})`; ctx.beginPath(); ctx.moveTo(x - 3 * s, y); ctx.lineTo(x, y + dir * 7 * s); ctx.lineTo(x + 3 * s, y); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x + 2 * s, y); ctx.lineTo(x + 5 * s, y + dir * 4 * s); ctx.lineTo(x + 6 * s, y); ctx.fill(); break;
+      case "ember":   // glowing cracks and sparks drifting up
+        if (d.top) break; ctx.fillStyle = `rgba(${c},${0.35 + 0.3 * Math.sin(clock * 3 + d.p)})`; ctx.fillRect(x - 4 * s, y + 1, 8 * s, 1.5);
+        { const ph = (clock * 0.4 + d.p) % 1; ctx.fillStyle = `rgba(${c},${0.7 * (1 - ph)})`; ctx.fillRect(x + Math.sin(d.p + ph * 6) * 4, y - ph * 50, 1.6, 1.6); } break;
+      case "ice":
+        if (!d.top) break; ctx.fillStyle = `rgba(${c},.32)`; ctx.beginPath(); ctx.moveTo(x - 2.5 * s, y); ctx.lineTo(x, y + 6 * s); ctx.lineTo(x + 2.5 * s, y); ctx.fill(); break;
+      case "bone":
+        if (d.top) break; ctx.strokeStyle = `rgba(${c},.28)`; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x - 5 * s, y + 3); ctx.lineTo(x + 5 * s, y + 2); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x - 5 * s, y + 3, 1.2, 0, 7); ctx.arc(x + 5 * s, y + 2, 1.2, 0, 7); ctx.stroke(); break;
+      default:   // water drips from the roof
+        if (!d.top) break; { const ph = (clock * 0.5 + d.p) % 1; ctx.fillStyle = `rgba(${c},${0.5 * (1 - ph)})`; ctx.fillRect(x, y + 2 + ph * ph * 60, 1.2, 2.5); } break;
+    }
+  }
+}
 function drawGunman(g) {
   const x = g.x, y = g.y, f = g.face;
   ctx.fillStyle = "#2e3a2e"; ctx.fillRect(x - 3, y - 11, 6, 8);
@@ -567,7 +705,7 @@ function drawGunman(g) {
 let last = performance.now();
 function frame(now) { const dt = Math.min(0.033, (now - last) / 1000); last = now; update(dt); render(); requestAnimationFrame(frame); }
 resize();
-CFG = cfg(1); genCave(1); heli = { x: 7 * DX, y: startPad.y - SKID_Y, vx: 0, vy: 0, tilt: 0, landed: startPad, rotor: 0 }; cam.x = heli.x + 120; cam.y = heli.y - 40;
+{ const L0 = savedLevel(); level = L0; CFG = cfg(L0); TH = THEMES[(L0 - 1) % THEMES.length]; genCave(L0); } heli = { x: 7 * DX, y: startPad.y - SKID_Y, vx: 0, vy: 0, tilt: 0, landed: startPad, rotor: 0 }; cam.x = heli.x + 120; cam.y = heli.y - 40;
 need = pads.reduce((a, p) => a + p.people, 0); updateHud(); showTitle(); requestAnimationFrame(frame);
 setInterval(() => { if (state === "title") heli.rotor += 0.6; }, 16);
 
@@ -593,7 +731,7 @@ for (const [id, k] of [["bLift", "up"], ["bFwd", "fwd"], ["bBack", "back"]]) {
 
 if (location.search.includes("debug")) window.__rl = {
   get: () => ({ state, level, rescued, need, x: Math.round(heli.x), y: Math.round(heli.y), vx: Math.round(heli.vx), vy: Math.round(heli.vy), tilt: +heli.tilt.toFixed(2), landed: !!heli.landed, why: heli.why || "" }),
-  world: () => ({ LX, N, DX, ceil, flr, pads, guns, exitX, startPad, CLEAR_MIN }), heli: () => heli, keys, rescueAll: () => { rescued = need; for (const p of pads) p.people = 0; }, startLevel, los, solid, ceilAt, floorAt, worldPts: () => worldPts(heli, ALL_PTS),
+  world: () => ({ LX, N, DX, ceil, flr, pads, guns, dinos, exitX, startPad, CLEAR_MIN, theme: TH.name }), heli: () => heli, keys, rescueAll: () => { rescued = need; for (const p of pads) p.people = 0; }, startLevel, los, solid, ceilAt, floorAt, worldPts: () => worldPts(heli, ALL_PTS),
 };
 })();
 </script>
