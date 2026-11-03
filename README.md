@@ -20,6 +20,7 @@ Every game is a single self-contained HTML file. No installs, no build step, no 
 | [Night Landing](https://sakhadib.github.io/games/night-landing/) | 2D arcade | Your UFO sinks lower every pass over a dark city. Drop one bomb at a time, clear the skyline, and land. |
 | [Coop Catch](https://sakhadib.github.io/games/coop-catch/) | 2D arcade | Hens on a rail lay eggs; run with your basket to catch them, dodge rotten eggs, and grab booster eggs. Five lives. |
 | [Light Fingers](https://sakhadib.github.io/games/light-fingers/) | 2D stealth | Steal every coin in a dark apartment while a policeman sweeps his torch. In the light you're slowed. Run, hide in wardrobes, don't get caught. |
+| [Rotorlight](https://sakhadib.github.io/games/rotorlight/) | 2D flying | A rescue helicopter in a pitch-dark cave. Land on ledges to pick up survivors, dodge slow bullets from gunmen, and fly out the far end. |
 
 ## How it works
 

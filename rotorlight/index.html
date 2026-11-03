@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Rotorlight · helicopter cave rescue | The Oven</title>
+<meta name="description" content="A free helicopter cave rescue game in your browser. Fly through a dark cave with only your searchlight, land on ledges to rescue stranded people, dodge gunmen's slow bullets, and fly out the far end. No ads, works on mobile.">
+<meta name="keywords" content="helicopter game, cave flying game, rescue helicopter, choplifter style, cave copter, physics flying game, browser game, no ads">
+<meta name="author" content="Sakhawat Adib">
+<link rel="canonical" href="https://sakhadib.github.io/games/rotorlight/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Oven">
+<meta property="og:title" content="Rotorlight · The Oven">
+<meta property="og:description" content="Fly a rescue helicopter through a dark cave, land on ledges, save everyone, dodge the gunmen. No ads.">
+<meta property="og:url" content="https://sakhadib.github.io/games/rotorlight/">
+<meta property="og:image" content="https://sakhadib.github.io/games/assets/shots/rotorlight.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sakhadib.github.io/games/assets/shots/rotorlight.jpg">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"VideoGame","name":"Rotorlight","url":"https://sakhadib.github.io/games/rotorlight/","description":"A helicopter cave rescue game. Fly through a dark cave with only your searchlight, land on ledges to rescue stranded people, dodge gunmen's slow bullets, and fly out the far end.","image":"https://sakhadib.github.io/games/assets/shots/rotorlight.jpg","genre":["Arcade","Flying"],"gamePlatform":["Web browser","Mobile","Desktop"],"applicationCategory":"Game","operatingSystem":"Any","playMode":"SinglePlayer","isAccessibleForFree":true,"inLanguage":"en","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Sakhawat Adib","url":"https://portfolio.sakhawatadib.com"},"isPartOf":{"@type":"WebSite","name":"The Oven","url":"https://sakhadib.github.io/games/"}}</script>
+<meta name="theme-color" content="#06070c">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%2306070c'/><path d='M8 8 L16 12 L16 16 L10 16 Z' fill='%23ffe3a3' opacity='.55'/><rect x='2' y='4' width='10' height='1.2' fill='%23c9d0e0'/><ellipse cx='6.5' cy='7.5' rx='4' ry='2.2' fill='%23e07a5f'/><rect x='1' y='7' width='3' height='1' fill='%23e07a5f'/></svg>">
+<style>
+  :root { --ink: #e7e8f0; --muted: #8b90a8; --warm: #ffd98a; --red: #ff5a5f; --green: #7ee0a8; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #06070c; }
+  body { font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); touch-action: none; user-select: none; -webkit-user-select: none; }
+  canvas { position: fixed; inset: 0; display: block; }
+  #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 16px; pointer-events: none; z-index: 3; }
+  .lv { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--muted); }
+  #res { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-top: 2px; }
+  #res small { font-size: 13px; color: var(--muted); font-weight: 700; }
+  #msg { margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--warm); min-height: 16px; }
+  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+  .btns { display: flex; gap: 6px; pointer-events: auto; }
+  .btn { font: 700 13px system-ui; color: var(--ink); background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.07); border-radius: 12px; padding: 8px 11px; cursor: pointer; text-decoration: none; line-height: 1; }
+  #best { font-size: 12px; font-weight: 700; color: var(--muted); }
+  #ov { position: fixed; inset: 0; display: none; place-items: center; z-index: 10; padding: 16px; background: rgba(3,3,8,.5); backdrop-filter: blur(3px); }
+  #ov.show { display: grid; }
+  .card { width: 100%; max-width: 390px; background: rgba(18,19,28,.93); border: 1px solid rgba(255,255,255,.07); border-radius: 22px; padding: 26px 24px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .card .kicker { font-size: 11px; font-weight: 700; letter-spacing: 4px; color: var(--muted); text-transform: uppercase; }
+  .card h1 { margin: 6px 0 8px; font-size: 32px; font-weight: 800; letter-spacing: -1px; line-height: 1.05; }
+  .card h1 span { color: var(--warm); }
+  .card h1 .r { color: var(--red); }
+  .card p { margin: 8px 0; color: #b5b8cc; font-size: 14.5px; line-height: 1.55; }
+  .card ul { text-align: left; margin: 10px 0; padding-left: 18px; color: #b5b8cc; font-size: 13.5px; line-height: 1.6; }
+  .rows { display: grid; grid-template-columns: 1fr auto; gap: 5px 14px; text-align: left; margin: 12px auto; max-width: 240px; font-size: 14px; color: #b5b8cc; }
+  .rows b { color: var(--ink); text-align: right; }
+  .go { display: inline-block; margin-top: 14px; background: var(--warm); color: #14131e; font-weight: 800; padding: 13px 22px; border-radius: 16px; cursor: pointer; border: 0; font-size: 15px; }
+  kbd { font: 700 12px system-ui; background: rgba(255,255,255,.1); border-radius: 6px; padding: 1px 6px; color: var(--ink); }
+  .tc { display: none; position: fixed; z-index: 4; touch-action: none; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.18); background: rgba(255,255,255,.06); color: var(--ink); font: 800 14px system-ui; letter-spacing: 1px; }
+  body.touch .tc { display: grid; place-items: center; }
+  .tc.on { background: rgba(255,217,138,.28); border-color: var(--warm); }
+  #bBack { left: 18px; bottom: calc(26px + env(safe-area-inset-bottom)); width: 78px; height: 78px; font-size: 22px; }
+  #bFwd { left: 108px; bottom: calc(26px + env(safe-area-inset-bottom)); width: 78px; height: 78px; font-size: 22px; }
+  #bLift { right: 20px; bottom: calc(26px + env(safe-area-inset-bottom)); width: 104px; height: 104px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud">
+  <div><div class="lv" id="lv">LEVEL 1</div><div id="res">0<small> / 0 rescued</small></div><div id="msg"></div></div>
+  <div class="right">
+    <div class="btns"><button class="btn" id="snd" title="Sound (M)">♪</button><a class="btn" href="../" title="Back to The Oven">⌂</a></div>
+    <div id="best">BEST LEVEL 0</div>
+  </div>
+</div>
+<button class="tc" id="bBack">◀</button><button class="tc" id="bFwd">▶</button><button class="tc" id="bLift">LIFT</button>
+<div id="ov" class="show"><div class="card" id="card"></div></div>
+
+<script>
+(() => {
+"use strict";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+const isTouch = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && matchMedia("(hover: none)").matches);
+if (isTouch) document.body.classList.add("touch");
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+// ---------- canvas ----------
+const cv = $("#c"), ctx = cv.getContext("2d");
+const dark = document.createElement("canvas"), dctx = dark.getContext("2d");
+let DPR = 1, VW = 0, VH = 0, S = 1;
+function resize() {
+  DPR = Math.min(1.5, devicePixelRatio || 1); VW = innerWidth; VH = innerHeight;
+  cv.width = VW * DPR; cv.height = VH * DPR; cv.style.width = VW + "px"; cv.style.height = VH + "px";
+  dark.width = Math.ceil(VW * DPR / 2); dark.height = Math.ceil(VH * DPR / 2);
+  S = Math.min(VH / 520, VW / 520);
+}
+addEventListener("resize", resize);
+
+// ---------- audio ----------
+let AC = null, muted = store.get("rl.muted", false), rotor = null;
+function ac() { if (muted) return null; try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } if (AC.state === "suspended") AC.resume(); return AC; }
+function tone(f, dur, type = "sine", vol = 0.08, slide = 0, delay = 0) {
+  const a = ac(); if (!a) return;
+  const t = a.currentTime + delay, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f * slide), t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.05);
+}
+function noise(dur, vol, f) {
+  const a = ac(); if (!a) return;
+  const b = a.createBuffer(1, a.sampleRate * dur, a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2);
+  const s = a.createBufferSource(), fl = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = b; fl.type = "lowpass"; fl.frequency.value = f; g.gain.value = vol; s.connect(fl).connect(g).connect(a.destination); s.start();
+}
+function rotorSound(on, lift) {
+  const a = on ? ac() : AC;
+  if (on && a && !rotor) {
+    // chopping rotor: low saw gated by a fast LFO
+    const o = a.createOscillator(), g = a.createGain(), lfo = a.createOscillator(), lg = a.createGain(), master = a.createGain(), fl = a.createBiquadFilter();
+    o.type = "sawtooth"; o.frequency.value = 70; fl.type = "lowpass"; fl.frequency.value = 420;
+    lfo.type = "square"; lfo.frequency.value = 14; lg.gain.value = 0.5; g.gain.value = 0.5;
+    lfo.connect(lg).connect(g.gain); master.gain.value = 0.035;
+    o.connect(fl).connect(g).connect(master).connect(a.destination); o.start(); lfo.start();
+    rotor = { o, lfo, master };
+  }
+  if (rotor) {
+    if (!on || muted) { try { rotor.o.stop(); rotor.lfo.stop(); } catch (e) {} rotor = null; return; }
+    rotor.lfo.frequency.value = lift ? 17 : 13; rotor.o.frequency.value = lift ? 82 : 68;
+  }
+}
+const sfx = {
+  board(n) { tone(660 + n * 40, 0.08, "triangle", 0.06); },
+  aim() { tone(1400, 0.05, "square", 0.025); },
+  shot() { noise(0.18, 0.12, 1800); tone(220, 0.1, "square", 0.04, 0.4); },
+  ping() { noise(0.08, 0.05, 3000); },
+  crash() { noise(1.3, 0.35, 700); tone(90, 1, "sawtooth", 0.06, 0.3); },
+  land() { tone(180, 0.12, "sine", 0.08, 0.7); },
+  clear() { [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, "triangle", 0.06, 0, i * 0.1)); },
+  ok() { tone(660, 0.08, "triangle", 0.06); },
+};
+const sndBtn = $("#snd");
+function syncSnd() { sndBtn.textContent = muted ? "×" : "♪"; sndBtn.style.opacity = muted ? 0.5 : 1; }
+function toggleSnd() { muted = !muted; store.set("rl.muted", muted); syncSnd(); if (muted) rotorSound(false); else sfx.ok(); }
+syncSnd(); sndBtn.addEventListener("click", (e) => { e.stopPropagation(); toggleSnd(); });
+
+// ======================================================================
+// THE HELICOPTER: shape points used for both drawing and collision
+// ======================================================================
+// local coordinates, nose to the right, y down; rotated by tilt
+const HULL = [[18, 1], [12, -6], [0, -8], [-12, -6], [-15, 2], [-6, 9], [12, 8]];
+const ROTOR = [[-26, -14], [0, -14], [26, -14]];
+const TAIL = [[-24, -2], [-36, -4], [-38, -10]];
+const SKIDS = [[-13, 13], [13, 13]];
+const ALL_PTS = [...HULL, ...ROTOR, ...TAIL, ...SKIDS];
+const SKID_Y = 13;
+function worldPts(h, pts) {
+  const c = Math.cos(h.tilt), s = Math.sin(h.tilt);
+  return pts.map(([x, y]) => [h.x + x * c - y * s, h.y + x * s + y * c]);
+}
+
+// ======================================================================
+// CAVE GENERATION with fairness guarantees
+// ======================================================================
+const DX = 16, WORLD_H = 620;
+let LX, N, ceil, flr, pads, guns, exitX, startPad;
+const ceilAt = (x) => { const f = clamp(x / DX, 0, N), i = Math.min(N - 1, Math.floor(f)), t = f - i; return ceil[i] + (ceil[i + 1] - ceil[i]) * t; };
+const floorAt = (x) => { const f = clamp(x / DX, 0, N), i = Math.min(N - 1, Math.floor(f)), t = f - i; return flr[i] + (flr[i + 1] - flr[i]) * t; };
+const solid = (x, y) => y <= ceilAt(x) || y >= floorAt(x);
+function los(ax, ay, bx, by) {
+  const d = Math.hypot(bx - ax, by - ay), n = Math.ceil(d / 6);
+  for (let i = 1; i < n; i++) { const t = i / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t; if (solid(x, y)) return false; }
+  return true;
+}
+const CLEAR_MIN = 92;   // the copter (rotor tip to skid ~28, nose to tail ~56) always fits with room to spare
+function genCave(L) {
+  LX = Math.round(2600 + Math.min(L, 10) * 520);
+  N = Math.ceil(LX / DX); LX = N * DX;
+  ceil = new Array(N + 1); flr = new Array(N + 1);
+  const ph = [rnd(0, 6), rnd(0, 6), rnd(0, 6), rnd(0, 6), rnd(0, 6)];
+  const baseGap = Math.max(150, 250 - L * 9), wig = Math.min(95, 50 + L * 5);
+  for (let i = 0; i <= N; i++) {
+    const x = i * DX;
+    const mid = WORLD_H / 2 + Math.sin(x / 520 + ph[0]) * 110 + Math.sin(x / 210 + ph[1]) * 40 * Math.min(1, L / 3 + 0.3);
+    const gap = baseGap + Math.sin(x / 330 + ph[2]) * wig * 0.6 + Math.sin(x / 140 + ph[3]) * wig * 0.4;
+    ceil[i] = mid - gap / 2 + rnd(-5, 5); flr[i] = mid + gap / 2 + rnd(-5, 5);
+  }
+  // start: a flat apron with room to lift off
+  const flatten = (i0, i1, y) => { for (let i = Math.max(0, i0); i <= Math.min(N, i1); i++) flr[i] = y; };
+  const sY = flr[6] - 10; flatten(0, 14, sY); for (let i = 0; i <= 16; i++) ceil[i] = Math.min(ceil[i], sY - 190);
+  for (let k = 15; k <= 19; k++) flr[k] = Math.max(flr[k], sY + 3);
+  startPad = { x0: 0, x1: 14 * DX, y: sY, people: 0, start: true };
+  // exit: the far end opens up into the night
+  const exI = N - 18; exitX = exI * DX; const eY = flr[exI];
+  for (let i = exI; i <= N; i++) { flr[i] = eY + (i - exI) * 2; ceil[i] = Math.min(ceil[i], eY - 160 - (i - exI) * 14); }
+  // rock spurs: stalagmites and stalactites that give cover and shape the flight
+  const spurs = Math.round(LX / 380);
+  for (let k = 0; k < spurs; k++) {
+    const c = Math.round(rnd(22, exI - 6)), w = 2 + (Math.random() * 3 | 0), hgt = rnd(40, 80) * Math.min(1.25, 0.8 + L * 0.06), up = Math.random() < 0.5;
+    for (let j = -w; j <= w; j++) { const i = c + j; if (i < 18 || i > exI - 2) continue; const f = Math.cos((j / (w + 1)) * Math.PI / 2) * hgt;
+      if (up) flr[i] -= f; else ceil[i] += f; }
+  }
+  // rescue pads: flat ledges wide enough for the skids, with headroom to land and lift off
+  pads = [];
+  const groups = Math.min(7, 2 + Math.floor(L / 1.5));
+  const span = exitX - 700, step = span / groups;
+  for (let g = 0; g < groups; g++) {
+    const cx = 500 + step * g + rnd(step * 0.2, step * 0.8);
+    const i0 = Math.round((cx - 60) / DX), i1 = Math.round((cx + 60) / DX);
+    let y = 0; for (let i = i0; i <= i1; i++) y = Math.max(y, flr[i]);
+    y -= rnd(0, 30);                                            // sometimes a raised ledge
+    flatten(i0, i1, y);
+    for (let k = 1; k <= 4; k++) { if (i0 - k >= 0) flr[i0 - k] = Math.max(flr[i0 - k], y + 3); if (i1 + k <= N) flr[i1 + k] = Math.max(flr[i1 + k], y + 3); }   // nothing around the pad sticks up above it
+    for (let i = i0 - 5; i <= i1 + 5; i++) if (i >= 0 && i <= N) ceil[i] = Math.min(ceil[i], y - 150);   // headroom over and around the pad
+    pads.push({ x0: i0 * DX, x1: i1 * DX, y, people: 1 + (Math.random() * (L > 2 ? 3 : 2) | 0), boarding: 0, wave: Math.random() * 6 });
+  }
+  // world band
+  for (let i = 0; i <= N; i++) { ceil[i] = Math.max(20, ceil[i]); flr[i] = Math.min(WORLD_H - 20, flr[i]); }
+  // guarantee: the copter fits everywhere, including round bends (check a window as wide as the copter)
+  for (let pass = 0; pass < 6; pass++) {
+    let fixed = 0;
+    for (let i = 0; i <= N; i++) {
+      let lo = Infinity, hi = -Infinity;
+      for (let j = Math.max(0, i - 3); j <= Math.min(N, i + 3); j++) { lo = Math.min(lo, flr[j]); hi = Math.max(hi, ceil[j]); }
+      if (lo - hi < CLEAR_MIN) {
+        const need = CLEAR_MIN - (lo - hi) + 2;
+        for (let j = Math.max(0, i - 3); j <= Math.min(N, i + 3); j++) {
+          if (isPadIndex(j)) { ceil[j] -= need; continue; }      // never move a pad: open the roof instead
+          ceil[j] -= need / 2; flr[j] += need / 2;
+        }
+        fixed++;
+      }
+    }
+    if (!fixed) break;
+  }
+  // gunmen: on flat bits of floor, far from pads, and never able to see a pad or the start
+  guns = [];
+  const want = L === 1 ? 2 : Math.min(12, 2 + Math.floor(L * 1.4));
+  const watchPts = [...pads.map((p) => [(p.x0 + p.x1) / 2, p.y - 16]), [7 * DX, sY - 16]];
+  const reach = cfg(L).range + 60;
+  for (let tries = 0; guns.length < want && tries < 600; tries++) {
+    const x = rnd(600, exitX - 200), i = Math.round(x / DX);
+    if (pads.some((p) => x > p.x0 - 170 && x < p.x1 + 170)) continue;
+    if (guns.some((g) => Math.abs(g.x - x) < 220)) continue;
+    const y = Math.max(flr[i - 1], flr[i], flr[i + 1]);
+    const gx = i * DX, eye = y - 14;
+    if (watchPts.some(([px, py]) => Math.hypot(px - gx, py - eye) < reach && los(gx, eye, px, py))) continue;
+    if (ceilAt(gx) > y - 60) continue;
+    flr[i - 1] = flr[i] = flr[i + 1] = y;
+    guns.push({ x: gx, y, eye, bullet: null, aimT: 0, cool: rnd(0.5, 1.5), face: 1, flash: 0 });
+  }
+  // final pass on the finished cave: anyone who can see a pad or the start (in range) is removed
+  guns = guns.filter((g) => !watchPts.some(([px, py]) => Math.hypot(px - g.x, py - g.eye) < reach && los(g.x, g.eye, px, py)));
+}
+function isPadIndex(j) { const x = j * DX; return pads.some((p) => x >= p.x0 - DX && x <= p.x1 + DX) || x <= 15 * DX; }
+
+// ======================================================================
+// GAME STATE
+// ======================================================================
+let state = "title", stateT = 0, clock = 0, level = 1, rescued = 0, need = 0, levelT = 0, score = 0;
+let heli, cam = { x: 0, y: 0 }, parts = [], runners = [], msgT = 0;
+let bestLevel = store.get("rl.bestLevel", 0), best = store.get("rl.best", 0);
+const keys = {}, touch = { up: false, fwd: false, back: false };
+function cfg(L) { return { bullet: Math.min(175, 70 + L * 11), aim: Math.max(0.28, 0.6 - L * 0.03), range: Math.min(460, 300 + L * 18), cool: Math.max(0.35, 1.0 - L * 0.06) }; }
+let CFG;
+function startLevel(L) {
+  level = L; CFG = cfg(L);
+  genCave(L);
+  need = pads.reduce((a, p) => a + p.people, 0); rescued = 0; levelT = 0; parts = []; runners = [];
+  heli = { x: 7 * DX, y: startPad.y - SKID_Y, vx: 0, vy: 0, tilt: 0, landed: startPad, rotor: 0, crashed: false };
+  cam.x = heli.x; cam.y = heli.y;
+  setState("play"); hideCard(); say(L === 1 ? "Hold ↑ to lift off. Find the flares." : `Level ${L}: ${need} people waiting.`, 3.5); updateHud();
+}
+function setState(s) { state = s; stateT = 0; }
+function say(t, d = 2.5) { $("#msg").textContent = t; msgT = d; }
+
+// ---------- physics ----------
+const GRAV = 210, LIFT = 430, TILT_MAX = 0.44, TILT_RATE = 1.9, LEVEL_RATE = 1.4, PUSH = 520;
+function update(dt) {
+  clock += dt; stateT += dt;
+  for (const p of parts) { p.vy += 260 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; if (ceil && solid(p.x, p.y)) { p.vx *= -0.3; p.vy *= -0.3; } }
+  parts = parts.filter((p) => p.life > 0);
+  msgT -= dt; if (msgT <= 0 && msgT > -1) { $("#msg").textContent = ""; msgT = -2; }
+  if (state === "crashed") { if (stateT > 1.8) gameOver(); return; }
+  if (state !== "play") return;
+  levelT += dt;
+  const h = heli;
+  const up = keys.up || touch.up, fwd = keys.fwd || touch.fwd, back = keys.back || touch.back;
+  rotorSound(true, up);
+  h.rotor += dt * 40;
+
+  if (h.landed) {
+    // boarding: people run over one at a time
+    const p = h.landed;
+    if (p.people > 0) {
+      p.boarding += dt;
+      if (p.boarding > 0.55) { p.boarding = 0; p.people--; rescued++; score += 100; sfx.board(rescued);
+        runners.push({ x: (p.x0 + p.x1) / 2 + (p.x1 - p.x0) * 0.35, y: p.y, tx: h.x, t: 0 });
+        say(p.people ? `Boarding… ${p.people} more here` : rescued >= need ? "Everyone's aboard! Fly to the far end." : "All aboard from this ledge. Lift off!", 2.2); }
+    }
+    if (up) { h.landed = null; h.vy = -40; h.y -= 1; }
+    else { updateGuns(dt); updateHud(); return; }
+  }
+
+  // tilt: forward/back keys lean the body, otherwise it settles level
+  if (fwd && !back) h.tilt = Math.min(TILT_MAX, h.tilt + TILT_RATE * dt);
+  else if (back && !fwd) h.tilt = Math.max(-TILT_MAX, h.tilt - TILT_RATE * dt);
+  else h.tilt -= Math.sign(h.tilt) * Math.min(Math.abs(h.tilt), LEVEL_RATE * dt);
+  // forces: gravity, rotor lift along the body's up axis, drag
+  const thrust = up ? LIFT : GRAV * 0.55;                   // idle rotor still eases the fall
+  h.vx += Math.sin(h.tilt) * (up ? PUSH : PUSH * 0.55) * dt;
+  h.vy += (GRAV - thrust * Math.cos(h.tilt)) * dt;
+  h.vx *= 1 - Math.min(1, 0.9 * dt); h.vy *= 1 - Math.min(1, 0.7 * dt);
+  h.vx = clamp(h.vx, -210, 210); h.vy = clamp(h.vy, -190, 230);
+  h.x += h.vx * dt; h.y += h.vy * dt;
+  if (h.x < 30) { h.x = 30; h.vx = Math.max(0, h.vx); }
+
+  // landing or crashing
+  const skids = worldPts(h, SKIDS);
+  const onGround = skids.some(([x, y]) => y >= floorAt(x));
+  if (onGround) {
+    const pad = [startPad, ...pads].find((p) => skids.every(([x]) => x >= p.x0 + 2 && x <= p.x1 - 2));
+    if (pad && Math.abs(h.tilt) < 0.18 && h.vy < 75 && Math.abs(h.vx) < 55) {
+      h.landed = pad; h.y = pad.y - SKID_Y; h.vx = h.vy = 0; h.tilt = 0; sfx.land();
+      if (pad.people) say("Landed. Hold still while they board…", 2);
+    } else return crash(pad ? (Math.abs(h.tilt) >= 0.18 ? "Landed too tilted." : "Came down too hard.") : "Touched down off the ledge.");
+  }
+  for (const [x, y] of worldPts(h, [...HULL, ...ROTOR, ...TAIL])) if (solid(x, y)) return crash(y <= ceilAt(x) ? "Rotor hit the rock." : "Hit the cave wall.");
+
+  // the far end
+  if (h.x > exitX + 40) {
+    if (rescued >= need) return levelClear();
+    if (!h.warned) { say(`${need - rescued} still waiting back there!`, 2.5); h.warned = true; }
+    h.x = exitX + 40; h.vx = Math.min(0, h.vx);
+  } else h.warned = false;
+  updateGuns(dt);
+  updateHud();
+}
+
+// ---------- gunmen: aim, then one slow straight shot at a time ----------
+function updateGuns(dt) {
+  const h = heli;
+  for (const g of guns) {
+    g.flash = Math.max(0, g.flash - dt);
+    const sees = Math.abs(h.x - g.x) < CFG.range && Math.hypot(h.x - g.x, h.y - g.eye) < CFG.range && los(g.x, g.eye, h.x, h.y);
+    if (sees) g.face = h.x > g.x ? 1 : -1;
+    if (g.bullet) {
+      const b = g.bullet; b.x += b.vx * dt; b.y += b.vy * dt; b.trail.push([b.x, b.y]); if (b.trail.length > 8) b.trail.shift();
+      if (solid(b.x, b.y) || b.x < 0 || b.x > LX) { sfx.ping(); for (let k = 0; k < 4; k++) parts.push({ x: b.x, y: b.y, vx: rnd(-60, 60), vy: rnd(-60, 20), life: 0.3, c: "#ffd98a" }); g.bullet = null; g.cool = CFG.cool; continue; }
+      // hit test against the copter's body
+      const pts = worldPts(h, [...HULL, ...TAIL, [0, -10]]);
+      if (pts.some(([x, y]) => Math.hypot(x - b.x, y - b.y) < 6) || Math.hypot(h.x - b.x, h.y - b.y) < 12) { g.bullet = null; return crash("Shot down."); }
+      continue;                                     // a bullet in the air: he waits
+    }
+    g.cool = Math.max(0, g.cool - dt);
+    if (sees && g.cool <= 0) {
+      if (g.aimT === 0) sfx.aim();
+      g.aimT += dt;
+      if (g.aimT >= CFG.aim) {                     // fire at where you are right now, straight line, never steers
+        const dx = h.x - g.x, dy = h.y - g.eye, d = Math.hypot(dx, dy);
+        g.bullet = { x: g.x + dx / d * 10, y: g.eye + dy / d * 10, vx: dx / d * CFG.bullet, vy: dy / d * CFG.bullet, trail: [] };
+        g.aimT = 0; g.flash = 0.12; sfx.shot();
+      }
+    } else g.aimT = Math.max(0, g.aimT - dt * 2);
+  }
+}
+
+function crash(why) {
+  if (state !== "play") return;
+  heli.crashed = true; setState("crashed"); rotorSound(false); sfx.crash(); say(why, 3);
+  for (let k = 0; k < 50; k++) parts.push({ x: heli.x + rnd(-14, 14), y: heli.y + rnd(-8, 8), vx: rnd(-160, 160), vy: rnd(-200, 40), life: rnd(0.6, 1.6), c: k % 3 ? "#ff8a4c" : "#c9d0e0" });
+  heli.why = why;
+}
+function levelClear() {
+  setState("between"); rotorSound(false); sfx.clear();
+  const bonus = Math.max(0, Math.round((60 + level * 25 - levelT) * 5));
+  score += 250 * level + bonus;
+  if (level > bestLevel) { bestLevel = level; store.set("rl.bestLevel", bestLevel); }
+  if (score > best) { best = score; store.set("rl.best", best); }
+  showCard(`<div class="kicker">Level ${level} complete</div><h1>Everyone's <span>out.</span></h1>
+    <div class="rows"><span>Rescued</span><b>${rescued}</b><span>Time</span><b>${fmt(levelT)}</b><span>Time bonus</span><b>+${bonus}</b><span>Score</span><b>${score}</b></div>
+    <p>The next cave is longer, with more people and more gunmen.</p>
+    <button class="go" data-a="next">Next cave</button>`);
+  updateHud();
+}
+function gameOver() {
+  if (score > best) { best = score; store.set("rl.best", best); }
+  setState("over");
+  showCard(`<div class="kicker">${heli.why || "Crashed"}</div><h1><span class="r">Crashed</span> on level ${level}.</h1>
+    <div class="rows"><span>Rescued this level</span><b>${rescued} / ${need}</b><span>Score</span><b>${score}</b><span>Best score</span><b>${best}</b><span>Best level cleared</span><b>${bestLevel}</b></div>
+    <button class="go" data-a="replay">Replay</button>`);
+  updateHud();
+}
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+// ---------- HUD ----------
+function updateHud() {
+  $("#lv").textContent = "LEVEL " + level;
+  $("#res").innerHTML = `${rescued}<small> / ${need} rescued</small>`;
+  $("#best").textContent = "BEST LEVEL " + bestLevel;
+}
+const ov = $("#ov"), card = $("#card");
+function showCard(h) { card.innerHTML = h; ov.classList.add("show"); }
+function hideCard() { ov.classList.remove("show"); }
+function showTitle() {
+  setState("title");
+  showCard(`<div class="kicker">Search and rescue</div><h1>Rotor<span>light</span></h1>
+    <p>People are stranded on ledges deep in a dark cave. Fly in, land, take them aboard, and fly out the far end.</p>
+    <ul>
+      <li>Touch any rock and you crash. The rotor counts.</li>
+      <li>Land on the flat ledge, slow and level. Stay put while they board.</li>
+      <li>Gunmen aim, then fire one slow, straight shot. While it's in the air they can't fire again. You can't shoot back.</li>
+    </ul>
+    <p>${isTouch ? "LIFT to climb. ◀ ▶ tilt to fly back and forth." : "<kbd>↑</kbd> lift · <kbd>→</kbd> tilt forward · <kbd>←</kbd> tilt back"}</p>
+    <button class="go" data-a="start">Take off</button>`);
+}
+ov.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-a]"); if (!b) return; sfx.ok();
+  if (b.dataset.a === "start" || b.dataset.a === "replay") { score = 0; startLevel(1); }
+  if (b.dataset.a === "next") startLevel(level + 1);
+  if (b.dataset.a === "resume") { setState("play"); hideCard(); }
+});
+
+// ======================================================================
+// RENDER
+// ======================================================================
+function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = "#06070c"; ctx.fillRect(0, 0, VW, VH);
+  if (!ceil) return;
+  const h = heli;
+  if (state === "play" || state === "title") {
+    cam.x += (h.x + h.vx * 0.6 - cam.x) * 0.08; cam.y += (h.y - cam.y) * 0.08;
+  }
+  const viewW = VW / S, viewH = VH / S;
+  cam.y = clamp(cam.y, viewH / 2 - 60, Math.max(viewH / 2 - 60, WORLD_H + 60 - viewH / 2));
+  const ox = VW / 2 - cam.x * S, oy = VH / 2 - cam.y * S;
+  ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * ox, DPR * oy);
+  const x0 = Math.max(0, Math.floor((cam.x - viewW / 2) / DX) - 2), x1 = Math.min(N, Math.ceil((cam.x + viewW / 2) / DX) + 2);
+
+  // open air past the exit and a far, dim cave wall behind everything
+  ctx.fillStyle = "#1a2036"; ctx.fillRect(x0 * DX, -200, (x1 - x0) * DX, WORLD_H + 400);
+  if (x1 * DX > exitX - 400) { const g = ctx.createLinearGradient(exitX - 200, 0, LX, 0); g.addColorStop(0, "rgba(40,50,90,0)"); g.addColorStop(1, "rgba(60,75,130,.6)"); ctx.fillStyle = g; ctx.fillRect(exitX - 200, -200, LX - exitX + 400, WORLD_H + 400); }
+  // rock
+  const rock = ctx.createLinearGradient(0, 0, 0, WORLD_H); rock.addColorStop(0, "#07080c"); rock.addColorStop(1, "#0a0b10");
+  ctx.fillStyle = rock;
+  ctx.beginPath(); ctx.moveTo(x0 * DX, -400); for (let i = x0; i <= x1; i++) ctx.lineTo(i * DX, ceil[i]); ctx.lineTo(x1 * DX, -400); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x0 * DX, WORLD_H + 400); for (let i = x0; i <= x1; i++) ctx.lineTo(i * DX, flr[i]); ctx.lineTo(x1 * DX, WORLD_H + 400); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "#4b5478"; ctx.lineWidth = 2;
+  ctx.beginPath(); for (let i = x0; i <= x1; i++) i === x0 ? ctx.moveTo(i * DX, ceil[i]) : ctx.lineTo(i * DX, ceil[i]); ctx.stroke();
+  ctx.beginPath(); for (let i = x0; i <= x1; i++) i === x0 ? ctx.moveTo(i * DX, flr[i]) : ctx.lineTo(i * DX, flr[i]); ctx.stroke();
+  // pads: marked ledges
+  for (const p of [startPad, ...pads]) {
+    if (p.x1 < x0 * DX || p.x0 > x1 * DX) continue;
+    ctx.fillStyle = p.start ? "#3f6f8f" : p.people ? "#c9a24a" : "#4a5068"; ctx.fillRect(p.x0, p.y - 1, p.x1 - p.x0, 3);
+    for (let x = p.x0 + 6; x < p.x1 - 4; x += 14) { ctx.fillStyle = p.people ? "rgba(255,217,138,.35)" : "rgba(255,255,255,.12)"; ctx.fillRect(x, p.y + 4, 6, 2); }
+    if (!p.start && p.people) {   // stranded people waving flares
+      for (let k = 0; k < p.people; k++) drawPerson((p.x0 + p.x1) / 2 + (p.x1 - p.x0) * 0.35 - k * 9, p.y, p.wave + k);
+    }
+  }
+  for (const r of runners) { r.t += 1 / 60; const x = r.x + (r.tx - r.x) * Math.min(1, r.t * 2.2); if (r.t < 0.45) drawPerson(x, r.y, r.t * 40, true); }
+  runners = runners.filter((r) => r.t < 0.45);
+  // gunmen
+  for (const g of guns) { if (g.x < x0 * DX - 20 || g.x > x1 * DX + 20) continue; drawGunman(g); }
+
+  // ---------- darkness: searchlight, cabin glow, flares, the exit's moonlight ----------
+  const hs = DPR * 0.5;
+  dctx.setTransform(1, 0, 0, 1, 0, 0); dctx.globalCompositeOperation = "source-over";
+  dctx.fillStyle = "rgba(2,2,6,0.8)"; dctx.fillRect(0, 0, dark.width, dark.height);
+  dctx.setTransform(hs * S, 0, 0, hs * S, hs * ox, hs * oy); dctx.globalCompositeOperation = "destination-out";
+  const beam = !h.crashed ? searchlight(h) : null;
+  if (beam) {
+    const g = dctx.createRadialGradient(beam.x, beam.y, 6, beam.x, beam.y, 300); g.addColorStop(0, "rgba(0,0,0,1)"); g.addColorStop(0.6, "rgba(0,0,0,.8)"); g.addColorStop(1, "rgba(0,0,0,0)");
+    dctx.fillStyle = g; dctx.beginPath(); dctx.moveTo(beam.x, beam.y); for (const p of beam.pts) dctx.lineTo(p[0], p[1]); dctx.closePath(); dctx.fill();
+  }
+  softHole(h.x, h.y, 70, 0.75);
+  for (const p of pads) if (p.people) softHole((p.x0 + p.x1) / 2 + (p.x1 - p.x0) * 0.35, p.y - 12, 60 + Math.sin(clock * 9 + p.wave) * 5, 0.85);
+  for (const g of guns) { if (g.aimT > 0 || g.flash > 0) softHole(g.x, g.eye, g.flash > 0 ? 70 : 26, 0.8); if (g.bullet) softHole(g.bullet.x, g.bullet.y, 22, 0.9); }
+  softHole(LX - 40, WORLD_H / 2 - 40, 520, 0.55);
+  for (const p of parts) softHole(p.x, p.y, 10, 0.6);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(dark, 0, 0, cv.width, cv.height);
+  ctx.setTransform(DPR * S, 0, 0, DPR * S, DPR * ox, DPR * oy);
+  // faint wet sheen on the rock edges, so the cave's shape reads even in the dark
+  ctx.strokeStyle = "rgba(110,125,175,.2)"; ctx.lineWidth = 1.5;
+  ctx.beginPath(); for (let i = x0; i <= x1; i++) i === x0 ? ctx.moveTo(i * DX, ceil[i]) : ctx.lineTo(i * DX, ceil[i]); ctx.stroke();
+  ctx.beginPath(); for (let i = x0; i <= x1; i++) i === x0 ? ctx.moveTo(i * DX, flr[i]) : ctx.lineTo(i * DX, flr[i]); ctx.stroke();
+
+  // things that glow above the dark
+  if (beam) { const g = ctx.createRadialGradient(beam.x, beam.y, 4, beam.x, beam.y, 300); g.addColorStop(0, "rgba(255,227,163,.16)"); g.addColorStop(1, "rgba(255,227,163,0)"); ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(beam.x, beam.y); for (const p of beam.pts) ctx.lineTo(p[0], p[1]); ctx.closePath(); ctx.fill(); }
+  for (const p of pads) if (p.people) { const fx = (p.x0 + p.x1) / 2 + (p.x1 - p.x0) * 0.35 + 4, fy = p.y - 24 + Math.sin(clock * 6 + p.wave) * 2; ctx.fillStyle = "#ff6b5a"; ctx.beginPath(); ctx.arc(fx, fy, 2.2, 0, 7); ctx.fill(); }
+  for (const g of guns) {
+    if (g.aimT > 0 && !g.bullet) {   // laser sight: the warning before a shot
+      const a = Math.atan2(h.y - g.eye, h.x - g.x), len = Math.min(CFG.range, Math.hypot(h.x - g.x, h.y - g.eye));
+      ctx.strokeStyle = `rgba(255,70,80,${0.25 + 0.5 * (g.aimT / CFG.aim)})`; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(g.x, g.eye); ctx.lineTo(g.x + Math.cos(a) * len, g.eye + Math.sin(a) * len); ctx.stroke(); ctx.setLineDash([]);
+    }
+    if (g.bullet) {
+      const b = g.bullet; ctx.strokeStyle = "rgba(255,190,110,.5)"; ctx.lineWidth = 2; ctx.beginPath(); b.trail.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y))); ctx.stroke();
+      ctx.fillStyle = "#ffe9b0"; ctx.beginPath(); ctx.arc(b.x, b.y, 2.6, 0, 7); ctx.fill();
+    }
+    if (g.flash > 0) { ctx.fillStyle = "rgba(255,220,140,.9)"; ctx.beginPath(); ctx.arc(g.x + g.face * 9, g.eye, 4, 0, 7); ctx.fill(); }
+  }
+  if (!h.crashed) drawHeli(h);
+  for (const p of parts) { ctx.globalAlpha = clamp(p.life, 0, 1); ctx.fillStyle = p.c; ctx.fillRect(p.x - 1.5, p.y - 1.5, 3, 3); }
+  ctx.globalAlpha = 1;
+  // exit marker
+  if (x1 * DX > exitX - 100) { ctx.fillStyle = rescued >= need ? "rgba(126,224,168,.9)" : "rgba(255,217,138,.6)"; ctx.font = "800 12px system-ui"; ctx.textAlign = "center"; ctx.fillText(rescued >= need ? "EXIT →" : `EXIT · ${need - rescued} still inside`, exitX, floorAt(exitX) - 70); ctx.textAlign = "start"; }
+  // landing helper: when close above a pad, show if you're lined up
+  if (state === "play" && !h.landed) {
+    const pad = [startPad, ...pads].find((p) => h.x > p.x0 - 30 && h.x < p.x1 + 30 && p.y - h.y < 110 && p.y - h.y > 0);
+    if (pad) { const ok = h.x - 13 >= pad.x0 + 2 && h.x + 13 <= pad.x1 - 2 && Math.abs(h.tilt) < 0.18 && h.vy < 75 && Math.abs(h.vx) < 55;
+      ctx.fillStyle = ok ? "rgba(126,224,168,.9)" : "rgba(255,120,120,.85)"; ctx.fillRect(h.x - 14, pad.y - 4, 28, 2); }
+  }
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (state === "crashed") { ctx.fillStyle = `rgba(255,90,60,${Math.max(0, 0.3 - stateT * 0.3)})`; ctx.fillRect(0, 0, VW, VH); }
+}
+function softHole(x, y, r, a) { const g = dctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(0,0,0,${a})`); g.addColorStop(1, "rgba(0,0,0,0)"); dctx.fillStyle = g; dctx.fillRect(x - r, y - r, r * 2, r * 2); }
+function searchlight(h) {
+  // mounted under the nose, pointing forward-down; rock blocks it
+  const c = Math.cos(h.tilt), s = Math.sin(h.tilt), lx = h.x + 14 * c - 6 * s, ly = h.y + 14 * s + 6 * c;
+  const dir = h.tilt + 0.42, half = 0.36, pts = [];
+  for (let k = 0; k <= 26; k++) {
+    const a = dir - half + (2 * half) * k / 26, dx = Math.cos(a), dy = Math.sin(a); let d = 300;
+    for (let t = 6; t < 300; t += 8) if (solid(lx + dx * t, ly + dy * t)) { d = t; break; }
+    pts.push([lx + dx * d, ly + dy * d]);
+  }
+  return { x: lx, y: ly, pts };
+}
+function drawHeli(h) {
+  ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.tilt);
+  // tail boom + rotor
+  ctx.strokeStyle = "#b85a43"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(-12, -1); ctx.lineTo(-36, -4); ctx.stroke();
+  ctx.fillStyle = "#b85a43"; ctx.beginPath(); ctx.moveTo(-34, -4); ctx.lineTo(-39, -12); ctx.lineTo(-36, -3); ctx.fill();
+  ctx.fillStyle = "rgba(220,225,240,.5)"; const tr = Math.sin(h.rotor * 1.7) * 5; ctx.fillRect(-38, -6 - tr / 2, 1.5, tr || 1);
+  // skids
+  ctx.strokeStyle = "#8a90a8"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-15, 13); ctx.lineTo(15, 13); ctx.moveTo(-8, 8); ctx.lineTo(-9, 13); ctx.moveTo(8, 8); ctx.lineTo(9, 13); ctx.stroke();
+  // body
+  ctx.fillStyle = "#e07a5f"; ctx.beginPath(); ctx.moveTo(18, 1); ctx.quadraticCurveTo(16, -7, 4, -8); ctx.lineTo(-10, -7); ctx.quadraticCurveTo(-16, -3, -14, 3); ctx.quadraticCurveTo(-6, 10, 12, 8); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#f2f0e9"; ctx.fillRect(-12, 0, 24, 2.2);
+  ctx.fillStyle = "rgba(170,210,240,.85)"; ctx.beginPath(); ctx.moveTo(17, 1); ctx.quadraticCurveTo(15, -6, 6, -7); ctx.lineTo(6, 1); ctx.closePath(); ctx.fill();   // cockpit glass
+  ctx.fillStyle = "#ffe3a3"; ctx.beginPath(); ctx.arc(14, 6, 1.6, 0, 7); ctx.fill();   // searchlight lamp
+  // mast + main rotor (a blur)
+  ctx.fillStyle = "#555b70"; ctx.fillRect(-1.5, -12, 3, 5);
+  const span = 26 * Math.abs(Math.cos(h.rotor));
+  ctx.fillStyle = "rgba(200,206,224,.85)"; ctx.fillRect(-span, -14.5, span * 2, 1.8);
+  ctx.fillStyle = "rgba(200,206,224,.12)"; ctx.fillRect(-26, -15, 52, 2.6);
+  // blinking beacon
+  if (Math.floor(clock * 2.5) % 2) { ctx.fillStyle = "#ff4d4d"; ctx.beginPath(); ctx.arc(-6, -8, 1.3, 0, 7); ctx.fill(); }
+  ctx.restore();
+}
+function drawPerson(x, y, ph, running) {
+  ctx.fillStyle = "#d9cdb8"; ctx.beginPath(); ctx.arc(x, y - 13, 2.6, 0, 7); ctx.fill();
+  ctx.strokeStyle = "#6f8fb0"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(x, y - 4); ctx.stroke();
+  ctx.strokeStyle = "#3f4660"; ctx.lineWidth = 1.6; const l = running ? Math.sin(ph) * 3 : 0;
+  ctx.beginPath(); ctx.moveTo(x, y - 4); ctx.lineTo(x - 2 + l, y); ctx.moveTo(x, y - 4); ctx.lineTo(x + 2 - l, y); ctx.stroke();
+  ctx.strokeStyle = "#6f8fb0"; ctx.lineWidth = 1.4; const w = Math.sin(clock * 6 + ph) * 0.8;
+  ctx.beginPath(); ctx.moveTo(x, y - 9); ctx.lineTo(x + 4 + w, y - 15 - w); ctx.moveTo(x, y - 9); ctx.lineTo(x - 3, y - 6); ctx.stroke();
+}
+function drawGunman(g) {
+  const x = g.x, y = g.y, f = g.face;
+  ctx.fillStyle = "#2e3a2e"; ctx.fillRect(x - 3, y - 11, 6, 8);
+  ctx.fillStyle = "#1f261f"; ctx.fillRect(x - 3, y - 3, 2, 3); ctx.fillRect(x + 1, y - 3, 2, 3);
+  ctx.fillStyle = "#c9a88a"; ctx.beginPath(); ctx.arc(x, y - 14, 2.8, 0, 7); ctx.fill();
+  ctx.fillStyle = "#2e3a2e"; ctx.fillRect(x - 3.2, y - 17.5, 6.4, 2.4);
+  ctx.strokeStyle = "#111"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, g.eye + 1); ctx.lineTo(x + f * 10, g.eye - (g.aimT > 0 ? 2 : -2)); ctx.stroke();
+}
+
+// ---------- loop ----------
+let last = performance.now();
+function frame(now) { const dt = Math.min(0.033, (now - last) / 1000); last = now; update(dt); render(); requestAnimationFrame(frame); }
+resize();
+CFG = cfg(1); genCave(1); heli = { x: 7 * DX, y: startPad.y - SKID_Y, vx: 0, vy: 0, tilt: 0, landed: startPad, rotor: 0 }; cam.x = heli.x + 120; cam.y = heli.y - 40;
+need = pads.reduce((a, p) => a + p.people, 0); updateHud(); showTitle(); requestAnimationFrame(frame);
+setInterval(() => { if (state === "title") heli.rotor += 0.6; }, 16);
+
+// ---------- input ----------
+const KM = { ArrowUp: "up", KeyW: "up", Space: "up", ArrowRight: "fwd", KeyD: "fwd", ArrowLeft: "back", KeyA: "back" };
+addEventListener("keydown", (e) => {
+  if (KM[e.code]) e.preventDefault();
+  if (e.code === "KeyM") return toggleSnd();
+  if ((e.code === "Enter" || e.code === "Space") && ov.classList.contains("show") && !e.repeat) { const b = card.querySelector("[data-a]"); if (b) b.click(); return; }
+  if ((e.code === "KeyP" || e.code === "Escape") && state === "play") return pause();
+  if (KM[e.code]) keys[KM[e.code]] = true;
+});
+addEventListener("keyup", (e) => { if (KM[e.code]) keys[KM[e.code]] = false; });
+addEventListener("blur", () => { for (const k in keys) keys[k] = false; touch.up = touch.fwd = touch.back = false; });
+function pause() { if (state !== "play") return; setState("paused"); rotorSound(false); showCard(`<div class="kicker">Paused</div><h1>Hovering…</h1><button class="go" data-a="resume">Resume</button>`); }
+document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+for (const [id, k] of [["bLift", "up"], ["bFwd", "fwd"], ["bBack", "back"]]) {
+  const b = document.getElementById(id);
+  b.addEventListener("pointerdown", (e) => { e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch (_) {} touch[k] = true; b.classList.add("on"); });
+  const end = () => { touch[k] = false; b.classList.remove("on"); };
+  b.addEventListener("pointerup", end); b.addEventListener("pointercancel", end);
+}
+
+if (location.search.includes("debug")) window.__rl = {
+  get: () => ({ state, level, rescued, need, x: Math.round(heli.x), y: Math.round(heli.y), vx: Math.round(heli.vx), vy: Math.round(heli.vy), tilt: +heli.tilt.toFixed(2), landed: !!heli.landed, why: heli.why || "" }),
+  world: () => ({ LX, N, DX, ceil, flr, pads, guns, exitX, startPad, CLEAR_MIN }), heli: () => heli, keys, rescueAll: () => { rescued = need; for (const p of pads) p.people = 0; }, startLevel, los, solid, ceilAt, floorAt, worldPts: () => worldPts(heli, ALL_PTS),
+};
+})();
+</script>
+<script data-goatcounter="https://sakhadib.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
